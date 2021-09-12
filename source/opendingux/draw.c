@@ -75,11 +75,16 @@ void init_video()
 		SDL_DOUBLEBUF
 #endif
 		);
+
+#ifndef RS90
 	GBAScreenSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, 16,
 	  GBA_RED_MASK,
 	  GBA_GREEN_MASK,
 	  GBA_BLUE_MASK,
 	  0 /* alpha: none */);
+#else
+	GBAScreenSurface = OutputSurface;
+#endif
 
 	GBAScreen = (uint16_t*) GBAScreenSurface->pixels;
 
@@ -1377,6 +1382,16 @@ static inline void gba_render(uint16_t* Dest, uint16_t* Src,
 	}
 }
 
+static inline void gba_render2(uint16_t* Dest)
+{
+	uint32_t X;
+	for (X = 0; X < GBA_SCREEN_HEIGHT * GBA_SCREEN_WIDTH * sizeof(uint16_t) / sizeof(uint32_t); X++)
+	{
+		*(uint32_t*) Dest = bgr555_to_rgb565(*(uint32_t*) Dest);
+		Dest += 2;
+	}
+}
+
 static inline void gba_convert(uint16_t* Dest, uint16_t* Src,
 	uint32_t SrcPitch, uint32_t DestPitch)
 {
@@ -1455,7 +1470,7 @@ void gba_render_half(uint16_t* Dest, uint16_t* Src, uint32_t DestX, uint32_t Des
 		Dest = (uint16_t*) ((uint8_t*) Dest + DestSkip);
 	}
 }
-
+#ifndef RS90
 void ApplyScaleMode(video_scale_type NewMode)
 {
 	switch (NewMode)
@@ -1488,6 +1503,9 @@ void ApplyScaleMode(video_scale_type NewMode)
 			break;
 	}
 }
+#else
+#define ApplyScaleMode(NewMode) 
+#endif
 
 void ScaleModeUnapplied()
 {
@@ -1496,11 +1514,13 @@ void ScaleModeUnapplied()
 
 void ReGBA_RenderScreen(void)
 {
+	static const struct timespec delay = {.tv_sec = 0, .tv_nsec = 1000 * 1000 };
 	if (ReGBA_IsRenderingNextFrame())
 	{
 		Stats.TotalRenderedFrames++;
 		Stats.RenderedFrames++;
 		video_scale_type ResolvedScaleMode = ResolveSetting(ScaleMode, PerGameScaleMode);
+#ifndef RS90
 		if (FramesBordered < 3)
 		{
 			ApplyScaleMode(ResolvedScaleMode);
@@ -1559,6 +1579,9 @@ void ReGBA_RenderScreen(void)
 #endif
 #endif /* NO_SCALING */
 		}
+#else
+		gba_render2(GBAScreen);
+#endif /* RS90 */
 		ReGBA_DisplayFPS();
 
 		ReGBA_VideoFlip();
@@ -1572,7 +1595,7 @@ void ReGBA_RenderScreen(void)
 			uint32_t Quota = AUDIO_OUTPUT_BUFFER_SIZE * 3 * OUTPUT_FREQUENCY_DIVISOR + (uint32_t) (FramesAhead * (SOUND_FREQUENCY / 59.73f));
 			if (ReGBA_GetAudioSamplesAvailable() <= Quota)
 				break;
-			usleep(1000);
+			nanosleep(&delay, NULL);
 		}
 	}
 
@@ -1931,6 +1954,9 @@ void ReGBA_VideoFlip()
 	if (SDL_MUSTLOCK(OutputSurface))
 		SDL_UnlockSurface(OutputSurface);
 	SDL_Flip(OutputSurface);
+#ifdef RS90
+	GBAScreen = (uint16_t*) GBAScreenSurface->pixels;
+#endif
 	if (SDL_MUSTLOCK(OutputSurface))
 		SDL_LockSurface(OutputSurface);
 }

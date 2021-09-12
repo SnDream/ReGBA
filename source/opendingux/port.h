@@ -37,7 +37,11 @@ typedef struct timespec timespec;
  * STMDB R0!, {R0,R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11,R12,R13,R14,R15} */
 #define TRANSLATION_CACHE_LIMIT_THRESHOLD (1024)
 
+#ifndef RS90
 #define MAX_AUTO_FRAMESKIP 4
+#else
+#define MAX_AUTO_FRAMESKIP 5
+#endif
 
 #define FILE_OPEN_APPEND ("a+")
 
