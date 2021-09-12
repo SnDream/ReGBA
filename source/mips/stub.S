@@ -2471,16 +2471,16 @@ execute_store_palette_u8:
   addu $2, $2, $4
 
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
-  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
-  addu $2, $2, $4
   andi $1, $5, 0x001F             #
   sll $1, $1, 11                  # Get Red value
-  andi $4, $5, 0x03E0             #
-  sll $4, $4, 1                   # Get Green value
-  or $1, $1, $4                   # R | G
-  andi $4, $5, 0x7C00             #
-  srl $4, $4, 10                  # Get Blue value
-  or $1, $1, $4                   # R | G | B
+  andi $2, $5, 0x03E0             #
+  sll $2, $2, 1                   # Get Green value
+  or $1, $1, $2                   # R | G
+  andi $2, $5, 0x7C00             #
+  srl $2, $2, 10                  # Get Blue value
+  or $1, $1, $2                   # R | G | B
+  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
+  addu $2, $2, $4
   jr $ra                          # return
   sh $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
 
@@ -2583,16 +2583,16 @@ execute_store_palette_u16:
   addu $2, $2, $4
 
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
-  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
-  addu $2, $2, $4
   andi $1, $5, 0x001F             #
   sll $1, $1, 11                  # Get Red value
-  andi $4, $5, 0x03E0             #
-  sll $4, $4, 1                   # Get Green value
-  or $1, $1, $4                   # R | G
-  andi $4, $5, 0x7C00             #
-  srl $4, $4, 10                  # Get Blue value
-  or $1, $1, $4                   # R | G | B
+  andi $2, $5, 0x03E0             #
+  sll $2, $2, 1                   # Get Green value
+  or $1, $1, $2                   # R | G
+  andi $2, $5, 0x7C00             #
+  srl $2, $2, 10                  # Get Blue value
+  or $1, $1, $2                   # R | G | B
+  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
+  addu $2, $2, $4
   jr $ra                          # return
   sh $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
 
@@ -2696,20 +2696,20 @@ execute_store_palette_u32:
   addu $2, $2, $4
 
   sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
-  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
-  addu $2, $2, $4
   lui $6, 0x001F
   ori $6, 0x001F
   and $1, $5, $6                  #
   sll $1, $1, 11                  # Get Red value
   sll $6, $6, 5                   # 0x03E003E0
-  and $4, $5, $6                  #
-  sll $4, $4, 1                   # Get Green value
-  or $1, $1, $4                   # R | G
+  and $2, $5, $6                  #
+  sll $2, $2, 1                   # Get Green value
+  or $1, $1, $2                   # R | G
   sll $6, $6, 5                   # 0x7C007C00
-  and $4, $5, $6                  #
-  srl $4, $4, 10                  # Get Blue value
-  or $1, $1, $4                   # R | G | B
+  and $2, $5, $6                  #
+  srl $2, $2, 10                  # Get Blue value
+  or $1, $1, $2                   # R | G | B
+  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
+  addu $2, $2, $4
   jr $ra                          # return
   sw $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
 
@@ -2822,20 +2822,20 @@ execute_store_palette_u32a:
   addu $2, $2, $4
 
   sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
-  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
-  addu $2, $2, $4
   lui $6, 0x001F
   ori $6, 0x001F
   and $1, $5, $6                  #
   sll $1, $1, 11                  # Get Red value
   sll $6, $6, 5                   # 0x03E003E0
-  and $4, $5, $6                  #
-  sll $4, $4, 1                   # Get Green value
-  or $1, $1, $4                   # R | G
+  and $2, $5, $6                  #
+  sll $2, $2, 1                   # Get Green value
+  or $1, $1, $2                   # R | G
   sll $6, $6, 5                   # 0x7C007C00
-  and $4, $5, $6                  #
-  srl $4, $4, 10                  # Get Blue value
-  or $1, $1, $4                   # R | G | B
+  and $2, $5, $6                  #
+  srl $2, $2, 10                  # Get Blue value
+  or $1, $1, $2                   # R | G | B
+  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
+  addu $2, $2, $4
   jr $ra                          # return
   sw $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
 
@@ -3327,16 +3327,16 @@ ext_store_palette16b:
   addu $2, $2, $4
 
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
-  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
-  addu $2, $2, $4
   andi $1, $5, 0x001F             #
   sll $1, $1, 11                  # Get Red value
-  andi $4, $5, 0x03E0             #
-  sll $4, $4, 1                   # Get Green value
-  or $1, $1, $4                   # R | G
-  andi $4, $5, 0x7C00             #
-  srl $4, $4, 10                  # Get Blue value
-  or $1, $1, $4                   # R | G | B
+  andi $2, $5, 0x03E0             #
+  sll $2, $2, 1                   # Get Green value
+  or $1, $1, $2                   # R | G
+  andi $2, $5, 0x7C00             #
+  srl $2, $2, 10                  # Get Blue value
+  or $1, $1, $2                   # R | G | B
+  lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
+  addu $2, $2, $4
   jr $ra                          # return
   sh $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
 
