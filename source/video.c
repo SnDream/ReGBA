@@ -1242,6 +1242,7 @@ render_scanline_affine_builder(transparent, alpha)
 
 
 #define bitmap_render_pixel_mode3(alpha_op)                                   \
+  current_pixel = CONVERT_PALETTE16(current_pixel);                           \
   *dest_ptr = current_pixel                                                   \
 
 #define bitmap_render_pixel_mode4(alpha_op)                                   \
