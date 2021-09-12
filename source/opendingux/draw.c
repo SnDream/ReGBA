@@ -1449,10 +1449,10 @@ void gba_render_half(uint16_t* Dest, uint16_t* Src, uint32_t DestX, uint32_t Des
 			* After (multiple letters = average):
 			*    abef cdgh
 			*/
-			uint32_t b_a = bgr555_to_rgb565(*(uint32_t*) ((uint8_t*) Src    )),
-			         d_c = bgr555_to_rgb565(*(uint32_t*) ((uint8_t*) Src + 4)),
-			         f_e = bgr555_to_rgb565(*(uint32_t*) ((uint8_t*) Src + SrcPitch    )),
-			         h_g = bgr555_to_rgb565(*(uint32_t*) ((uint8_t*) Src + SrcPitch + 4));
+			uint32_t b_a = (*(uint32_t*) ((uint8_t*) Src    )),
+			         d_c = (*(uint32_t*) ((uint8_t*) Src + 4)),
+			         f_e = (*(uint32_t*) ((uint8_t*) Src + SrcPitch    )),
+			         h_g = (*(uint32_t*) ((uint8_t*) Src + SrcPitch + 4));
 			uint32_t bf_ae = likely(b_a == f_e)
 				? b_a
 				: Average32(b_a, f_e);

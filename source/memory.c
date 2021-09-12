@@ -3922,6 +3922,11 @@ uint32_t load_state(uint32_t SlotNumber)
 		{
 			gbc_sound_channel[i].sample_data = square_pattern_duty[2];
 		}
+		// Generate converted palette (since it is not saved)
+		for(i = 0; i < sizeof(palette_ram_converted) / sizeof(palette_ram_converted[0]); i++)
+		{
+			palette_ram_converted[i] = CONVERT_PALETTE16(palette_ram[i]);
+		}
 
 		reg[CHANGED_PC_STATUS] = 1;
 
