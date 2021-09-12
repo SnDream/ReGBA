@@ -2696,6 +2696,7 @@ execute_store_palette_u32:
   addu $2, $2, $4
 
   sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+  sw $6, REG_SAVE2($16)           # save a2
   lui $6, 0x001F
   ori $6, 0x001F
   and $1, $5, $6                  #
@@ -2708,6 +2709,7 @@ execute_store_palette_u32:
   and $2, $5, $6                  #
   srl $2, $2, 10                  # Get Blue value
   or $1, $1, $2                   # R | G | B
+  lw $6, REG_SAVE2($16)           # restore return address
   lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
   addu $2, $2, $4
   jr $ra                          # return
@@ -2822,6 +2824,7 @@ execute_store_palette_u32a:
   addu $2, $2, $4
 
   sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+  sw $6, REG_SAVE2($16)           # save a2
   lui $6, 0x001F
   ori $6, 0x001F
   and $1, $5, $6                  #
@@ -2834,6 +2837,7 @@ execute_store_palette_u32a:
   and $2, $5, $6                  #
   srl $2, $2, 10                  # Get Blue value
   or $1, $1, $2                   # R | G | B
+  lw $6, REG_SAVE2($16)           # restore return address
   lui $2, %hi(palette_ram_converted)    # start loading palette_ram_converted address (delay)
   addu $2, $2, $4
   jr $ra                          # return
