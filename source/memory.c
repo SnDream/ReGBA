@@ -163,6 +163,7 @@ bool IsNintendoBIOS = false;
 
 // Palette RAM             (05000000h)      1 KiB
 FULLY_UNINITIALIZED(uint16_t palette_ram   [  0x200]);
+FULLY_UNINITIALIZED(uint16_t palette_ram_converted   [  0x200]);
 // Object Attribute Memory (07000000h)      1 KiB
 FULLY_UNINITIALIZED(uint16_t oam_ram       [  0x200]);
 // I/O Registers           (04000000h)     32 KiB
@@ -1683,14 +1684,16 @@ CPU_ALERT_TYPE write_io_register32(uint32_t address, uint32_t value)
 }
 
 #define write_palette8(address, value)                                        \
-  ADDRESS16(palette_ram, (address & ~0x01)) = ((value << 8) | value)          \
+  ADDRESS16(palette_ram, (address & ~0x01)) = ((value << 8) | value);         \
+  ADDRESS16(palette_ram_converted, (address & ~0x01)) = CONVERT_PALETTE16((value << 8) | value) \
 
 #define write_palette16(address, value)                                       \
-  ADDRESS16(palette_ram, address) = value                                     \
+  ADDRESS16(palette_ram, address) = value;                                    \
+  ADDRESS16(palette_ram_converted, address) = CONVERT_PALETTE16(value)        \
 
 #define write_palette32(address, value)                                       \
-  ADDRESS32(palette_ram, address) = value                                     \
-
+  ADDRESS32(palette_ram, address) = value;                                    \
+  ADDRESS32(palette_ram_converted, address) = CONVERT_PALETTE32(value)        \
 
 void write_backup(uint32_t address, uint32_t value)
 {
@@ -3729,6 +3732,7 @@ void init_memory()
   memset(io_registers, 0, sizeof(io_registers));
   memset(oam_ram, 0, sizeof(oam_ram));
   memset(palette_ram, 0, sizeof(palette_ram));
+  memset(palette_ram_converted, 0, sizeof(palette_ram_converted));
   memset(iwram_data, 0, sizeof(iwram_data));
   memset(ewram_data, 0, sizeof(ewram_data));
   memset(vram, 0, sizeof(vram));
@@ -3829,6 +3833,11 @@ void loadstate_rewind(void)
 	for(i = 0; i < 4; i++)
 	{
 		gbc_sound_channel[i].sample_data = square_pattern_duty[2];
+	}
+	// Generate converted palette (since it is not saved)
+	for(i = 0; i < sizeof(palette_ram_converted) / sizeof(palette_ram_converted[0]); i++)
+	{
+		palette_ram_converted[i] = CONVERT_PALETTE16(palette_ram[i]);
 	}
 
 	reg[CHANGED_PC_STATUS] = 1;

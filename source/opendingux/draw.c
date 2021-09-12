@@ -1579,8 +1579,8 @@ void ReGBA_RenderScreen(void)
 #endif
 #endif /* NO_SCALING */
 		}
-#else
-		gba_render2(GBAScreen);
+// #else
+// 		gba_render2(GBAScreen);
 #endif /* RS90 */
 		ReGBA_DisplayFPS();
 

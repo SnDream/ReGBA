@@ -887,7 +887,7 @@ void render_scanline_conditional_bitmap(uint32_t start, uint32_t end, uint16_t *
   }                                                                           \
 
 #define render_scanline_extra_variables_base_normal(bg_type)                  \
-  uint16_t *palette = palette_ram                                             \
+  uint16_t *palette = palette_ram_converted                                   \
 
 #define render_scanline_extra_variables_base_alpha(bg_type)                   \
   uint32_t bg_combine = color_combine_mask(5);                                \
@@ -1013,7 +1013,7 @@ int32_t affine_reference_x[2];
 int32_t affine_reference_y[2];
 
 #define affine_render_bg_pixel_normal()                                       \
-  current_pixel = palette_ram[0]                                              \
+  current_pixel = palette_ram_converted[0]                                    \
 
 #define affine_render_bg_pixel_alpha()                                        \
   current_pixel = bg_combine                                                  \
@@ -1359,7 +1359,7 @@ render_scanline_affine_builder(transparent, alpha)
     src_ptr = (uint16_t *)vram                                                \
 
 #define render_scanline_vram_setup_mode4()                                    \
-  uint16_t *palette = palette_ram;                                            \
+  uint16_t *palette = palette_ram_converted;                                  \
   uint8_t *src_ptr;                                                           \
   if(io_registers[REG_DISPCNT] & 0x10)                                        \
     src_ptr = (uint8_t*)(vram + 0xA000);                                      \
@@ -1814,7 +1814,7 @@ uint8_t obj_alpha_count[160];
 // Build obj rendering functions
 
 #define render_scanline_obj_extra_variables_normal(bg_type)                   \
-  uint16_t *palette = palette_ram + 256                                       \
+  uint16_t *palette = palette_ram_converted + 256                             \
 
 #define render_scanline_obj_extra_variables_color()                           \
   uint32_t dest;                                                              \
@@ -2139,7 +2139,7 @@ void order_layers(uint8_t layer_flags)
 
 
 #define fill_line_color_normal()                                              \
-  color = palette_ram[color]                                                  \
+  color = palette_ram_converted[color]                                        \
 
 #define fill_line_color_alpha()                                               \
 
@@ -2163,8 +2163,8 @@ fill_line_builder(color32)
 // Alpha blend two pixels (pixel_top and pixel_bottom).
 
 #define blend_pixel()                                                         \
-  pixel_bottom = palette_ram[(pixel_pair >> 16) & 0x1FF];           \
-  pixel_bottom = (pixel_bottom | (pixel_bottom << 16)) & 0x03E07C1F /*0x07E0F81F*/;          \
+  pixel_bottom = palette_ram_converted[(pixel_pair >> 16) & 0x1FF];           \
+  pixel_bottom = (pixel_bottom | (pixel_bottom << 16)) & 0x07E0F81F;          \
   pixel_top = ((pixel_top * blend_a) + (pixel_bottom * blend_b)) >> 4         \
 
 
@@ -2173,16 +2173,16 @@ fill_line_builder(color32)
 
 #define blend_saturate_pixel()                                                \
   blend_pixel();                                                              \
-  if(pixel_top & 0x04008020/*0x08010020*/)                                                  \
+  if(pixel_top & 0x08010020)                                                  \
   {                                                                           \
-    if(pixel_top & 0x04000000/*0x08000000*/)                                                \
-      pixel_top |= 0x03E00000/*0x07E00000*/;                                                \
+    if(pixel_top & 0x08000000)                                                \
+      pixel_top |= 0x07E00000;                                                \
                                                                               \
-    if(pixel_top & 0x00008000/*0x00010000*/)                                                \
-      pixel_top |= 0x00007C00/*0x0000F800*/;                                                \
+    if(pixel_top & 0x00010000)                                                \
+      pixel_top |= 0x0000F800;                                                \
                                                                               \
-    if(pixel_top & 0x00000020/*0x00000020*/)                                                \
-      pixel_top |= 0x0000001F/*0x0000001F*/;                                                \
+    if(pixel_top & 0x00000020)                                                \
+      pixel_top |= 0x0000001F;                                                \
   }                                                                           \
 
 #define brighten_pixel()                                                      \
@@ -2200,13 +2200,13 @@ fill_line_builder(color32)
 
 
 #define expand_pixel_no_dest(expand_type, pixel_source)                       \
-  pixel_top = (pixel_top | (pixel_top << 16)) & 0x03E07C1F /*0x07E0F81F*/;                   \
+  pixel_top = (pixel_top | (pixel_top << 16)) & 0x07E0F81F;                   \
   expand_type##_pixel();                                                      \
-  pixel_top &= 0x03E07C1F /*0x07E0F81F*/;                                                    \
+  pixel_top &= 0x07E0F81F;                                                    \
   pixel_top = (pixel_top >> 16) | pixel_top                                   \
 
 #define expand_pixel(expand_type, pixel_source)                               \
-  pixel_top = palette_ram[pixel_source & 0x1FF];                    \
+  pixel_top = palette_ram_converted[pixel_source & 0x1FF];                    \
   expand_pixel_no_dest(expand_type, pixel_source);                            \
   *screen_dest_ptr = pixel_top                                                \
 
@@ -2226,7 +2226,7 @@ fill_line_builder(color32)
     else                                                                      \
     {                                                                         \
       *screen_dest_ptr =                                                      \
-       palette_ram[pixel_source & 0x1FF];                           \
+       palette_ram_converted[pixel_source & 0x1FF];                           \
     }                                                                         \
                                                                               \
     screen_src_ptr++;                                                         \
@@ -2257,7 +2257,7 @@ fill_line_builder(color32)
     else                                                                      \
     {                                                                         \
       *screen_dest_ptr =                                                      \
-       palette_ram[pixel_pair & 0x1FF];                             \
+       palette_ram_converted[pixel_pair & 0x1FF];                             \
     }                                                                         \
                                                                               \
     screen_src_ptr++;                                                         \
@@ -2338,7 +2338,7 @@ void expand_brighten(uint16_t *screen_src_ptr, uint16_t *screen_dest_ptr,
   if(blend > 16)
     blend = 16;
 
-  upper = ((0x03E07C1F /*0x07E0F81F*/ * blend) >> 4) & 0x03E07C1F /*0x07E0F81F*/;
+  upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;
   blend = 16 - blend;
 
   expand_loop(brighten, effect_condition_fade(pixel_top), pixel_top);
@@ -2388,7 +2388,7 @@ void expand_brighten_partial_alpha(uint32_t *screen_src_ptr, uint16_t *screen_de
   if(blend > 16)
     blend = 16;
 
-  upper = ((0x03E07C1F /*0x07E0F81F*/ * blend) >> 4) & 0x03E07C1F /*0x07E0F81F*/;
+  upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;
   blend = 16 - blend;
 
   if(blend_a > 16)
@@ -2563,7 +2563,7 @@ void expand_brighten_partial_alpha(uint32_t *screen_src_ptr, uint16_t *screen_de
   }                                                                           \
   else                                                                        \
   {                                                                           \
-    uint32_t pixel_top = palette_ram[0];                                      \
+    uint32_t pixel_top = palette_ram_converted[0];                            \
     switch((bldcnt >> 6) & 0x03)                                              \
     {                                                                         \
       /* Fade to white */                                                     \
@@ -2577,7 +2577,7 @@ void expand_brighten_partial_alpha(uint32_t *screen_src_ptr, uint16_t *screen_de
           if(blend > 16)                                                      \
             blend = 16;                                                       \
                                                                               \
-          upper = ((0x03E07C1F /*0x07E0F81F*/ * blend) >> 4) & 0x03E07C1F /*0x07E0F81F*/;                   \
+          upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;                   \
           blend = 16 - blend;                                                 \
                                                                               \
           expand_pixel_no_dest(brighten, pixel_top);                          \

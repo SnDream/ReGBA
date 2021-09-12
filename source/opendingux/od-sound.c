@@ -46,7 +46,11 @@ void feed_buffer(void *udata, Uint8 *buffer, int len)
 	 * AUDIO_OUTPUT_BUFFER_SIZE is grabbed before the core has had time to
 	 * generate all of it (at AUDIO_OUTPUT_BUFFER_SIZE * 2), the end may
 	 * still be silence, causing crackling. */
+#ifndef RS90
+	if (Samples < Requested * 2)
+#else
 	if (Samples * 2 < Requested * 3)
+#endif
 		return; // Generate more sound first, please!
 	else
 		Stats.InSoundBufferUnderrun = 0;

@@ -217,6 +217,7 @@ struct BIOS_DATA
 };
 
 extern uint16_t palette_ram   [  0x200];
+extern uint16_t palette_ram_converted [  0x200];
 extern uint16_t oam_ram       [  0x200];
 extern uint16_t io_registers  [ 0x4000];
 extern uint8_t  ewram_data    [0x40000];

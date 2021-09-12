@@ -136,6 +136,12 @@ typedef uint32_t FIXED16_16;  // Q16.16 fixed-point
 #define NO  0
 #define YES 1
 
+#define CONVERT_PALETTE16(value) \
+  ((((value) & 0x1F) << 11) | (((value) & 0x03E0) << 1) | (((value) & 0x7C00) >> 10))
+
+#define CONVERT_PALETTE32(value) \
+  ((((value) & 0x001F001F) << 11) | (((value) & 0x03E003E0) << 1) | (((value) & 0x7C007C00) >> 10))
+
 #include "port.h"
 
 /* If the port didn't give a way to declare a variable as fully uninitialised
