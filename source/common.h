@@ -136,11 +136,21 @@ typedef uint32_t FIXED16_16;  // Q16.16 fixed-point
 #define NO  0
 #define YES 1
 
+inline uint16_t CONVERT_PALETTE16(uint16_t value) {
+  return ((((value) & 0x1F) << 11) | (((value) & 0x03E0) << 1) | (((value) & 0x7C00) >> 10));
+}
+
+inline uint32_t CONVERT_PALETTE32(uint32_t value) {
+  return ((((value) & 0x001F001F) << 11) | (((value) & 0x03E003E0) << 1) | (((value) & 0x7C007C00) >> 10));
+}
+
+#if 0
 #define CONVERT_PALETTE16(value) \
   ((((value) & 0x1F) << 11) | (((value) & 0x03E0) << 1) | (((value) & 0x7C00) >> 10))
 
 #define CONVERT_PALETTE32(value) \
   ((((value) & 0x001F001F) << 11) | (((value) & 0x03E003E0) << 1) | (((value) & 0x7C007C00) >> 10))
+#endif
 
 #include "port.h"
 
