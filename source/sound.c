@@ -434,7 +434,8 @@ uint32_t gbc_sound_envelope_volume_table[16] =
     FIXED_DIV(14, 15, 14),
     FIXED_DIV(15, 15, 14) };
 
-uint32_t gbc_sound_buffer_index = 0;
+/* Skip frameskip at init */
+uint32_t gbc_sound_buffer_index = (AUDIO_OUTPUT_BUFFER_SIZE * OUTPUT_FREQUENCY_DIVISOR * 4) & BUFFER_SIZE_MASK;
 
 uint32_t gbc_sound_last_cpu_ticks = 0;
 uint32_t gbc_sound_partial_ticks = 0;
@@ -594,7 +595,8 @@ void reset_sound()
       memset(ds->fifo, 0, sizeof(ds->fifo));
     }
 
-    gbc_sound_buffer_index = 0;
+    /* Skip frameskip at init */
+    gbc_sound_buffer_index = (AUDIO_OUTPUT_BUFFER_SIZE * OUTPUT_FREQUENCY_DIVISOR * 4) & BUFFER_SIZE_MASK;
     gbc_sound_last_cpu_ticks = 0;
     gbc_sound_partial_ticks = 0;
     sound_read_offset = 0;

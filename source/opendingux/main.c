@@ -197,6 +197,7 @@ int main(int argc, char *argv[])
 	init_sdlaudio();
 	init_sound();
 
+#ifndef RS90
 	// Try loading a border from the user's .gpsp directory first.
 	// Fall back on the bundled one.
 	sprintf(file, "%s/border.png", main_path);
@@ -208,7 +209,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Failed to load a GBA border. None will be shown in unscaled modes.\n");
 		}
 	}
-
+#endif
 
 #if 0
   video_resolution_large();

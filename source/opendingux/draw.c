@@ -128,6 +128,7 @@ void SetGameResolution()
 #endif
 }
 
+#ifndef RS90
 bool ApplyBorder(const char* Filename)
 {
 	SDL_Surface* JustLoaded = loadPNG(Filename, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -154,6 +155,7 @@ bool ApplyBorder(const char* Filename)
 	}
 	return Result;
 }
+#endif
 
 /***************************************************************************
  *   Scaler copyright (C) 2013 by Paul Cercueil                            *
@@ -1578,6 +1580,14 @@ void ReGBA_RenderScreen(void)
 				gba_convert(OutputSurface->pixels, GBAScreen, GBAScreenSurface->pitch, OutputSurface->pitch);
 #endif
 #endif /* NO_SCALING */
+		}
+#else
+		for(int i = 0; i < sizeof(palette_ram_converted) / sizeof(palette_ram_converted[0]); i++)
+		{
+			if (palette_ram_converted[i] != CONVERT_PALETTE16(palette_ram[i])) {
+				printf("%d %04X %04X\n", i, palette_ram[i], palette_ram_converted[i]);
+				palette_ram_converted[i] = CONVERT_PALETTE16(palette_ram[i]);
+			}
 		}
 // #else
 // 		gba_render2(GBAScreen);
