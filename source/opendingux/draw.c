@@ -1582,13 +1582,6 @@ void ReGBA_RenderScreen(void)
 #endif /* NO_SCALING */
 		}
 #else
-		for(int i = 0; i < sizeof(palette_ram_converted) / sizeof(palette_ram_converted[0]); i++)
-		{
-			if (palette_ram_converted[i] != CONVERT_PALETTE16(palette_ram[i])) {
-				printf("%d %04X %04X\n", i, palette_ram[i], palette_ram_converted[i]);
-				palette_ram_converted[i] = CONVERT_PALETTE16(palette_ram[i]);
-			}
-		}
 // #else
 // 		gba_render2(GBAScreen);
 #endif /* RS90 */
