@@ -11,14 +11,14 @@ BOARD_LDFLAGS := -Wl,-zcommon-page-size=2097152 -Wl,-zmax-page-size=2097152 -lhu
 else ifeq ($(CONFIG),lepus)
 CROSS_COMPILE ?= /opt/lepus-toolchain/usr/bin/mipsel-lepus-linux-musl-
 BOARD_DEFS := -DGCW_ZERO -DLOAD_ALL_ROM -DSCREEN_WIDTH=320 -DSCREEN_HEIGHT=240
-BOARD_CFLAGS := -Ofast -mips32 -mno-check-zero-division -fno-PIC \
-                -mno-fp-exceptions -mno-check-zero-division -mframe-header-opt -fsingle-precision-constant \
-                -fno-stack-protector -fomit-frame-pointer -falign-functions=1 -falign-jumps=1 -falign-loops=1 \
+BOARD_CFLAGS := -O2
 BOARD_LDFLAGS := -Wl,-zcommon-page-size=2097152 -Wl,-zmax-page-size=2097152 -lhugetlbfs
 else ifeq ($(CONFIG),rs90)
 CROSS_COMPILE ?= /opt/rs90-toolchain/usr/bin/mipsel-rs90-linux-musl-
 BOARD_DEFS := -DRS90 -DUSE_MMAP -DSCREEN_WIDTH=240 -DSCREEN_HEIGHT=160
-BOARD_CFLAGS := -O2
+BOARD_CFLAGS := -Ofast -mips32 -mno-check-zero-division -fno-PIC -mno-fp-exceptions \
+                -mframe-header-opt -fsingle-precision-constant -fno-stack-protector \
+                -fomit-frame-pointer -falign-functions=1 -falign-jumps=1 -falign-loops=1
 BOARD_LDFLAGS := -Wl,-zcommon-page-size=16384 -Wl,-zmax-page-size=16384
 else ifeq ($(CONFIG),dingoo)
 CROSS_COMPILE ?= /opt/opendingux-toolchain/usr/bin/mipsel-linux-
