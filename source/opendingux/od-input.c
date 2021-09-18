@@ -300,7 +300,7 @@ enum ReGBA_Buttons ReGBA_GetPressedButtons()
 	if (
 #if defined(GCW_ZERO) || defined(RS90)
 	// Unified emulator menu buttons: Start+Select
-		((LastButtons & (OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT)) == (OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT))
+		((CurButtons & 0x1FFFF) == (OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT))
 #else
 	// The ReGBA Menu key should be pressed if ONLY the hotkey bound to it
 	// is pressed on the native device.
