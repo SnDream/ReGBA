@@ -171,26 +171,23 @@ int main(int argc, char *argv[])
 
 	// Try loading the user's .gpsp directory's GBA BIOS first.
 	// Fall back on the bundled one.
+	int bios_load_count = 0;
 	ReGBA_ProgressInitialise(FILE_ACTION_LOAD_BIOS);
 	sprintf(file, "%s/gba_bios.bin", main_path);
-	if(load_bios(file) == -1)
+	bios_load_count += init_bios_set(file, 0);
+	ReGBA_ProgressUpdate(1, 2);
+	sprintf(file, "%s/gba_bios.bin", executable_path);
+	bios_load_count += init_bios_set(file, 1);
+	if (bios_load_count == 0)
 	{
-		ReGBA_ProgressUpdate(1, 2);
-		sprintf(file, "%s/gba_bios.bin", executable_path);
-		if (load_bios(file) == -1)
-		{
-			ShowErrorScreen("The GBA BIOS was not found in any location. "
-				"You can load one in your home directory's .gpsp "
-				"subdirectory. On this platform, that's:\n%s\nThe file needs "
-				"to be named gba_bios.bin.", main_path);
+		ShowErrorScreen("The GBA BIOS was not found in any location. "
+			"You can load one in your home directory's .gpsp "
+			"subdirectory. On this platform, that's:\n%s\nThe file needs "
+			"to be named gba_bios.bin.", main_path);
 
-			error_quit();
-		}
-		else
-			ReGBA_ProgressUpdate(2, 2);
+		error_quit();
 	}
-	else
-		ReGBA_ProgressUpdate(2, 2);
+	ReGBA_ProgressUpdate(2, 2);
 	ReGBA_ProgressFinalise();
 
 	init_main();
@@ -232,6 +229,7 @@ int main(int argc, char *argv[])
 			GetFileNameNoExtension(FileNameNoExt, CurrentGamePath);
 			ReGBA_LoadSettings(FileNameNoExt, true);
 		}
+		load_bios(ResolveSetting(BootFromBIOS, PerGameBootFromBIOS) != 2 ? 0 : 1);
 #if 0
 	init_input();
 
@@ -239,7 +237,7 @@ int main(int argc, char *argv[])
     video_resolution_small();
 #endif
 
-    init_cpu(ResolveSetting(BootFromBIOS, PerGameBootFromBIOS) /* in port.c */);
+    init_cpu(ResolveSetting(BootFromBIOS, PerGameBootFromBIOS) == 1 /* in port.c */);
   }
   else
   {
@@ -267,7 +265,7 @@ int main(int argc, char *argv[])
       video_resolution_small();
       clear_screen(0);
       flip_screen();
-      init_cpu(ResolveSetting(BootFromBIOS, PerGameBootFromBIOS) /* in port.c */);
+      init_cpu(ResolveSetting(BootFromBIOS, PerGameBootFromBIOS) == 1 /* in port.c */);
     }
 #endif
   }
@@ -557,7 +555,8 @@ void reset_gba()
 {
   init_main();
   init_memory();
-  init_cpu(ResolveSetting(BootFromBIOS, PerGameBootFromBIOS) /* in port.c */);
+  load_bios(ResolveSetting(BootFromBIOS, PerGameBootFromBIOS) != 2 ? 0 : 1);
+  init_cpu(ResolveSetting(BootFromBIOS, PerGameBootFromBIOS) == 1 /* in port.c */);
   reset_sound();
 }
 

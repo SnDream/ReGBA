@@ -216,6 +216,13 @@ struct BIOS_DATA
   uint16_t metadata[0x4000];
 };
 
+struct BIOS_SET
+{
+  bool    is_loaded;
+  bool    is_nintendo_bios;
+  uint8_t rom[0x4000];
+};
+
 extern uint16_t palette_ram   [  0x200];
 extern uint16_t palette_ram_converted [  0x200];
 extern uint16_t oam_ram       [  0x200];
@@ -276,7 +283,8 @@ extern CPU_ALERT_TYPE write_memory32(uint32_t address, uint32_t value);
 
 extern CPU_ALERT_TYPE dma_transfer(DMA_TRANSFER_TYPE *dma);
 extern uint8_t *memory_region(uint32_t address, uint32_t *memory_limit);
-extern int32_t load_bios(const char* name);
+extern int32_t init_bios_set(const char* name, int index);
+extern int32_t load_bios(int perferred_index);
 extern ssize_t load_gamepak(const char* file_path);
 extern uint8_t *load_gamepak_page(uint16_t physical_index);
 extern uint32_t load_backup();

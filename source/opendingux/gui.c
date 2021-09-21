@@ -1161,11 +1161,11 @@ static struct Menu DebugMenu = {
 
 static struct MenuEntry PerGameDisplayMenu_BootSource = {
 	ENTRY_OPTION("boot_from", "Boot from", &PerGameBootFromBIOS),
-	.ChoiceCount = 3, .Choices = { { "No override", "" }, { "Cartridge ROM", "cartridge" }, { "GBA BIOS", "gba_bios" } }
+	.ChoiceCount = 4, .Choices = { { "No override", "" }, { "Cartridge ROM", "cartridge" }, { "External BIOS", "gba_bios" }, { "Internal BIOS", "int_bios" } }
 };
 static struct MenuEntry DisplayMenu_BootSource = {
 	ENTRY_OPTION("boot_from", "Boot from", &BootFromBIOS),
-	.ChoiceCount = 2, .Choices = { { "Cartridge ROM", "cartridge" }, { "GBA BIOS", "gba_bios" } }
+	.ChoiceCount = 3, .Choices = { { "Cartridge ROM", "cartridge" }, { "External BIOS", "gba_bios" }, { "Internal BIOS", "int_bios" } }
 };
 
 static struct MenuEntry PerGameDisplayMenu_FPSCounter = {

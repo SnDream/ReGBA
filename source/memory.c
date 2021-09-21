@@ -206,6 +206,9 @@ uint32_t bios_read_protect;
 uint8_t *gamepak_rom = NULL;
 uint32_t gamepak_size;
 
+// BIOS set
+struct BIOS_SET bios_set[2] = { 0 };
+
 /******************************************************************************
  * 全局变量定义
  ******************************************************************************/
@@ -2449,10 +2452,10 @@ int32_t load_game_config(char *gamepak_title, char *gamepak_code, char *gamepak_
 	idle_loop_targets = 0;
 	idle_loop_target_pc[0] = 0xFFFFFFFF;
 	iwram_stack_optimize = 1;
-	if (IsNintendoBIOS)
-	{
-		bios.rom[0x39] = 0x00; // Only Nintendo's BIOS requires this.
-		bios.rom[0x2C] = 0x00; // Normmatt's open-source replacement doesn't.
+	for (int i = 0; i < 2; i++) {
+		if (!bios_set[i].is_nintendo_bios) continue;
+		bios_set[i].rom[0x39] = 0x00; // Only Nintendo's BIOS requires this.
+		bios_set[i].rom[0x2C] = 0x00; // Normmatt's open-source replacement doesn't.
 	}
 	flash_device_id = FLASH_DEVICE_MACRONIX_64KB;
 	backup_type = BACKUP_NONE;
@@ -2560,17 +2563,17 @@ static bool lookup_game_config(char *gamepak_title, char *gamepak_code, char *ga
 					}
 
 					if(!strcasecmp(current_variable, "bios_rom_hack_39") &&
-					   !strcasecmp(current_value, "yes") &&
-					   IsNintendoBIOS)
+					   !strcasecmp(current_value, "yes"))
 					{
-						bios.rom[0x39] = 0xC0;
+						if (bios_set[0].is_nintendo_bios) bios_set[0].rom[0x39] = 0xC0;
+						if (bios_set[1].is_nintendo_bios) bios_set[1].rom[0x39] = 0xC0;
 					}
 
 					if(!strcasecmp(current_variable, "bios_rom_hack_2C") &&
-					   !strcasecmp(current_value, "yes") &&
-					   IsNintendoBIOS)
+					   !strcasecmp(current_value, "yes"))
 					{
-						bios.rom[0x2C] = 0x02;
+						if (bios_set[0].is_nintendo_bios) bios_set[0].rom[0x2C] = 0x02;
+						if (bios_set[1].is_nintendo_bios) bios_set[1].rom[0x2C] = 0x02;
 					}
 			}
 		}
@@ -2734,20 +2737,54 @@ uint8_t nintendo_bios_sha1[] = {
 	0xd8, 0xc4, 0x36, 0xf7, 0xf1, 0x86, 0xd2, 0x5d, 0x34, 0x92,
 };
 
-int32_t load_bios(const char* name)
+#if 0
+uint8_t nintendo_proto_bios_sha1[] = {
+	0xaa, 0x98, 0xa2, 0xad, 0x32, 0xb8, 0x61, 0x06, 0x34, 0x06,
+	0x65, 0xd1, 0x22, 0x2d, 0x7d, 0x97, 0x3a, 0x13, 0x61, 0xc7,
+};
+#endif
+
+int32_t init_bios_set(const char* name, int index)
 {
+	index &= 1;
+	bios_set[index].is_loaded = false;
+
 	FILE_TAG_TYPE bios_file;
 	FILE_OPEN(bios_file, name, READ);
 
 	if(FILE_CHECK_VALID(bios_file)) {
-		FILE_READ(bios_file, bios.rom, 0x4000);
+		FILE_READ(bios_file, bios_set[index].rom, 0x4000);
 		FILE_CLOSE(bios_file);
 
 		sha1nfo sha1;
 		sha1_init(&sha1);
-		sha1_write(&sha1, bios.rom, 0x4000);
+		sha1_write(&sha1, bios_set[index].rom, 0x4000);
 		uint8_t* digest = sha1_result(&sha1);
-		IsNintendoBIOS = memcmp(digest, nintendo_bios_sha1, SHA1_HASH_LENGTH) == 0;
+
+		bios_set[index].is_nintendo_bios = false;
+		if (memcmp(digest, nintendo_bios_sha1, SHA1_HASH_LENGTH) == 0) bios_set[index].is_nintendo_bios = true;
+#if 0
+		if (memcmp(digest, nintendo_proto_bios_sha1, SHA1_HASH_LENGTH) == 0) bios_set[index].is_nintendo_bios = true;
+#endif
+
+		bios_set[index].is_loaded = true;
+
+		return 1;
+	}
+
+	return 0;
+}
+
+int32_t load_bios(int perferred_index)
+{
+	perferred_index &= 1;
+
+	/* if perferred is not loaded, try another index */
+	if (!bios_set[perferred_index].is_loaded) perferred_index ^= 1;
+
+	if (bios_set[perferred_index].is_loaded) {
+		memcpy(bios.rom, bios_set[perferred_index].rom, 0x4000);
+		IsNintendoBIOS = bios_set[perferred_index].is_nintendo_bios;
 
 		return 0;
 	}
