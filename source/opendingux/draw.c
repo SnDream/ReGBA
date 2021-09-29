@@ -1521,8 +1521,8 @@ void ReGBA_RenderScreen(void)
 	{
 		Stats.TotalRenderedFrames++;
 		Stats.RenderedFrames++;
-		video_scale_type ResolvedScaleMode = ResolveSetting(ScaleMode, PerGameScaleMode);
 #ifndef RS90
+		video_scale_type ResolvedScaleMode = ResolveSetting(ScaleMode, PerGameScaleMode);
 		if (FramesBordered < 3)
 		{
 			ApplyScaleMode(ResolvedScaleMode);
@@ -1954,12 +1954,14 @@ void ReGBA_ProgressFinalise()
 
 void ReGBA_VideoFlip()
 {
+#ifndef RS90
 	if (SDL_MUSTLOCK(OutputSurface))
 		SDL_UnlockSurface(OutputSurface);
 	SDL_Flip(OutputSurface);
-#ifdef RS90
-	GBAScreen = (uint16_t*) GBAScreenSurface->pixels;
-#endif
 	if (SDL_MUSTLOCK(OutputSurface))
 		SDL_LockSurface(OutputSurface);
+#else
+	SDL_Flip(OutputSurface);
+	GBAScreen = (uint16_t*) GBAScreenSurface->pixels;
+#endif
 }
