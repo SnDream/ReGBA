@@ -89,6 +89,8 @@ void render_scanline_conditional_bitmap(uint32_t start, uint32_t end, uint16_t *
  uint32_t enable_flags, uint32_t dispcnt, uint32_t bldcnt, bitmap_layer_render_struct
  *layer_renderers);
 
+uint32_t obj_mixcolor;
+
 #define no_op                                                                 \
 
 #define tile_lookup_palette_full(palette, source)                             \
@@ -107,7 +109,12 @@ void render_scanline_conditional_bitmap(uint32_t start, uint32_t end, uint16_t *
 
 #define tile_expand_base_normal(index)                                        \
     tile_lookup_palette(palette, current_pixel);                              \
-    dest_ptr[index] = current_pixel                                           \
+    if (obj_mixcolor) {                                                       \
+      /* inaccurate */  \
+      dest_ptr[index] = ((current_pixel & 0xf7de) >> 1) + ((dest_ptr[index] & 0xf7de) >> 1); \
+    } else {                                                                  \
+      dest_ptr[index] = current_pixel;                                        \
+    }                                                                         \
 
 #define tile_expand_transparent_normal(index)                                 \
   tile_expand_base_normal(index)                                              \
@@ -1984,6 +1991,7 @@ void render_scanline_obj_##alpha_op##_##map_space(uint32_t priority,          \
                                                                               \
     obj_x = (int32_t)(obj_attribute_1 << 23) >> 23;                           \
     obj_width = (int32_t)obj_width_table[obj_size];                           \
+    obj_mixcolor = obj_attribute_0 & 0x400;                                   \
                                                                               \
     render_scanline_obj_prologue_##combine_op(alpha_op);                      \
                                                                               \
@@ -1995,6 +2003,7 @@ void render_scanline_obj_##alpha_op##_##map_space(uint32_t priority,          \
     obj_height = obj_height_table[obj_size];                                  \
     render_scanline_obj_##partial_alpha_op(combine_op, alpha_op, map_space);  \
   }                                                                           \
+  obj_mixcolor = 0;                                                           \
 }                                                                             \
 
 render_scanline_obj_builder(transparent, normal, 1D, no_partial_alpha)
