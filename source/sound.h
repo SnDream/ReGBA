@@ -104,7 +104,7 @@ typedef struct
 // The value should technically be 32768, but at least the GBA Video ROMs and
 // Golden Sun - The Lost Age require this to be 2 times that, and
 // the Pokémon GBA games require it to be a multiple or divisor of 22050 Hz.
-#define SOUND_FREQUENCY (88200.0f)
+#define SOUND_FREQUENCY (66150.0f)
 
 #define GBC_SOUND_TONE_CONTROL_LOW(channel, address)                          \
 {                                                                             \
@@ -368,5 +368,7 @@ uint32_t ReGBA_LoadNextAudioSample(int16_t* Left, int16_t* Right);
  *   or fewer.
  */
 uint32_t ReGBA_DiscardAudioSamples(uint32_t Count);
+
+// void ReuseReadedAudioSamples(uint32_t length);
 
 #endif /* SOUND_H */
