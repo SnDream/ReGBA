@@ -374,11 +374,13 @@ u32 update_gba()
 
           update_gbc_sound(cpu_ticks);
 
-		Stats.EmulatedFrames++;
-		Stats.TotalEmulatedFrames++;
-		ReGBA_RenderScreen();
+          Stats.EmulatedFrames++;
+          Stats.TotalEmulatedFrames++;
+          ReGBA_RenderScreen();
 
+#if 0
           update_backup();
+#endif
 
 #if 0
           process_cheats();

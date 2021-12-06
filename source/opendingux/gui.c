@@ -1521,6 +1521,8 @@ u32 ReGBA_Menu(enum ReGBA_MenuEntryReason EntryReason)
 		usleep(5000);
 	}
 
+	update_backup_force();
+
 	SetMenuResolution();
 
 	struct Menu *ActiveMenu = &MainMenu, *PreviousMenu = ActiveMenu;
