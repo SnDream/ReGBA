@@ -1516,7 +1516,6 @@ void ScaleModeUnapplied()
 
 void ReGBA_RenderScreen(void)
 {
-	static const struct timespec delay = {.tv_sec = 0, .tv_nsec = 1000 * 1000 };
 	if (ReGBA_IsRenderingNextFrame())
 	{
 		Stats.TotalRenderedFrames++;
@@ -1581,9 +1580,6 @@ void ReGBA_RenderScreen(void)
 #endif
 #endif /* NO_SCALING */
 		}
-#else
-// #else
-// 		gba_render2(GBAScreen);
 #endif /* RS90 */
 		ReGBA_DisplayFPS();
 
@@ -1598,7 +1594,7 @@ void ReGBA_RenderScreen(void)
 			uint32_t Quota = AUDIO_OUTPUT_BUFFER_SIZE * 3 * OUTPUT_FREQUENCY_DIVISOR + (uint32_t) (FramesAhead * (SOUND_FREQUENCY / 59.73f));
 			if (ReGBA_GetAudioSamplesAvailable() <= Quota)
 				break;
-			nanosleep(&delay, NULL);
+			SDL_Delay(1);
 		}
 	}
 
