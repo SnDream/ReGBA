@@ -185,7 +185,7 @@ static void UpdateOpenDinguxButtons()
 				break;
 		}
 	}
-
+#if !defined(RS90)
 	CurButtons &= ~(OPENDINGUX_ANALOG_LEFT | OPENDINGUX_ANALOG_RIGHT
 	               | OPENDINGUX_ANALOG_UP | OPENDINGUX_ANALOG_DOWN);
 	int16_t X = GetHorizontalAxisValue(), Y = GetVerticalAxisValue(),
@@ -194,6 +194,7 @@ static void UpdateOpenDinguxButtons()
 	else if (X < -Threshold) CurButtons |= OPENDINGUX_ANALOG_LEFT;
 	if (Y > Threshold)       CurButtons |= OPENDINGUX_ANALOG_DOWN;
 	else if (Y < -Threshold) CurButtons |= OPENDINGUX_ANALOG_UP;
+#endif
 }
 
 static bool IsFastForwardToggled = false;
@@ -275,8 +276,9 @@ enum ReGBA_Buttons ReGBA_GetPressedButtons()
 
 	LastButtons = CurButtons;
 	CurButtons = FutureButtons;
-
+#if !defined(RS90)
 	ProcessSpecialKeys();
+#endif
 	for (i = 0; i < 12; i++)
 	{
 		if (LastButtons & ResolveButtons(KeypadRemapping[i], PerGameKeypadRemapping[i]))
@@ -284,6 +286,7 @@ enum ReGBA_Buttons ReGBA_GetPressedButtons()
 			Result |= 1 << (uint_fast16_t) i;
 		}
 	}
+#if !defined(RS90)
 	if (ResolveSetting(AnalogAction, PerGameAnalogAction) == 1)
 	{
 		if (LastButtons & OPENDINGUX_ANALOG_LEFT)  Result |= REGBA_BUTTON_LEFT;
@@ -291,6 +294,7 @@ enum ReGBA_Buttons ReGBA_GetPressedButtons()
 		if (LastButtons & OPENDINGUX_ANALOG_UP)    Result |= REGBA_BUTTON_UP;
 		if (LastButtons & OPENDINGUX_ANALOG_DOWN)  Result |= REGBA_BUTTON_DOWN;
 	}
+#endif
 
 	if ((Result & REGBA_BUTTON_LEFT) && (Result & REGBA_BUTTON_RIGHT))
 		Result &= ~REGBA_BUTTON_LEFT;
