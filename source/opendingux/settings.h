@@ -21,6 +21,7 @@
 #define __REGBA_SETTINGS_H__
 
 #include "common.h"
+#include "od-input.h"
 
 extern bool ReGBA_SaveSettings(char *cfg_name, bool PerGame);
 extern void ReGBA_LoadSettings(char *cfg_name, bool PerGame);
@@ -75,7 +76,13 @@ extern bool ReGBA_AreMenuSettingsEqual(struct Menu* Menu, void* A, void* B);
  * Returns:
  *   The value of the setting being resolved, per-game preferred.
  */
-extern uint32_t ResolveSetting(uint32_t GlobalValue, uint32_t PerGameValue);
+inline uint32_t ResolveSetting(uint32_t GlobalValue, uint32_t PerGameValue)
+{
+	if (PerGameValue != 0)
+		return PerGameValue - 1;
+	else
+		return GlobalValue;
+}
 
 /*
  * Resolves the value of a button mapping or hotkey that can be overridden in
@@ -91,7 +98,13 @@ extern uint32_t ResolveSetting(uint32_t GlobalValue, uint32_t PerGameValue);
  * Returns:
  *   The value of the setting being resolved, per-game preferred.
  */
-extern enum OpenDingux_Buttons ResolveButtons(enum OpenDingux_Buttons GlobalValue, enum OpenDingux_Buttons PerGameValue);
+inline enum OpenDingux_Buttons ResolveButtons(enum OpenDingux_Buttons GlobalValue, enum OpenDingux_Buttons PerGameValue)
+{
+	if (PerGameValue != 0)
+		return PerGameValue;
+	else
+		return GlobalValue;
+}
 
 /*
  * Clears per-game setting overrides. Should be called between games after
