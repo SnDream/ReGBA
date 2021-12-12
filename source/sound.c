@@ -435,7 +435,7 @@ uint32_t gbc_sound_envelope_volume_table[16] =
     FIXED_DIV(15, 15, 14) };
 
 /* Skip frameskip at init */
-uint32_t gbc_sound_buffer_index = (AUDIO_OUTPUT_BUFFER_SIZE * OUTPUT_FREQUENCY_DIVISOR * 4) & BUFFER_SIZE_MASK;
+uint32_t gbc_sound_buffer_index = (AUDIO_OUTPUT_BUFFER_SIZE * OUTPUT_FREQUENCY_DIVISOR * 2) & BUFFER_SIZE_MASK;
 
 uint32_t gbc_sound_last_cpu_ticks = 0;
 uint32_t gbc_sound_partial_ticks = 0;
@@ -622,6 +622,17 @@ void sound_read_mem_savestate()
 void sound_write_mem_savestate()
   sound_savestate_body(WRITE_MEM)
 
+#define DROP_LENGTH (AUDIO_OUTPUT_BUFFER_SIZE * OUTPUT_FREQUENCY_DIVISOR)
+
+void ReuseReadedAudioSamples(uint16_t Count)
+{
+#if 0
+	sound_read_offset = (gbc_sound_buffer_index - DROP_LENGTH) & BUFFER_SIZE_MASK;
+#else
+	sound_read_offset = (sound_read_offset - Count * 2) & BUFFER_SIZE_MASK;
+#endif
+}
+
 uint32_t ReGBA_GetAudioSamplesAvailable()
 {
 	return ((gbc_sound_buffer_index - sound_read_offset) & BUFFER_SIZE_MASK) / 2;
@@ -633,9 +644,9 @@ uint32_t ReGBA_LoadNextAudioSample(int16_t* Left, int16_t* Right)
 		return 0;
 
 	*Left  = sound_buffer[sound_read_offset];
-	sound_buffer[sound_read_offset] = 0;
+	sound_buffer[(sound_read_offset - DROP_LENGTH * 2) & BUFFER_SIZE_MASK] = 0;
 	*Right = sound_buffer[sound_read_offset + 1];
-	sound_buffer[sound_read_offset + 1] = 0;
+	sound_buffer[(sound_read_offset + 1 - DROP_LENGTH * 2) & BUFFER_SIZE_MASK] = 0;
 	sound_read_offset = (sound_read_offset + 2) & BUFFER_SIZE_MASK;
 	return 1;
 }

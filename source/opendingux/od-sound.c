@@ -46,12 +46,9 @@ void feed_buffer(void *udata, Uint8 *buffer, int len)
 	 * AUDIO_OUTPUT_BUFFER_SIZE is grabbed before the core has had time to
 	 * generate all of it (at AUDIO_OUTPUT_BUFFER_SIZE * 2), the end may
 	 * still be silence, causing crackling. */
-#ifndef RS90
-	if (Samples < Requested * 2)
-#else
-	if (Samples * 2 < Requested * 3)
-#endif
-		return; // Generate more sound first, please!
+
+	if (Samples < Requested)
+		ReuseReadedAudioSamples((Requested - Samples) * OUTPUT_FREQUENCY_DIVISOR);
 	else
 		Stats.InSoundBufferUnderrun = 0;
 		
@@ -59,7 +56,7 @@ void feed_buffer(void *udata, Uint8 *buffer, int len)
 
 	// Take the first half of the sound.
 	uint32_t i;
-	for (i = 0; i < Requested / 2; i++)
+	for (i = 0; i < Requested; i++)
 	{
 		s16 Left = 0, Right = 0;
 		RenderSample(&Left, &Right);
@@ -67,6 +64,13 @@ void feed_buffer(void *udata, Uint8 *buffer, int len)
 		*Next++ = Left  << 4;
 		*Next++ = Right << 4;
 	}
+
+	if (Samples < Requested)
+		ReuseReadedAudioSamples((Requested * 1 - 0) * OUTPUT_FREQUENCY_DIVISOR);
+	else if (Samples < Requested * 2)
+		ReuseReadedAudioSamples((Requested * 2 - Samples) * OUTPUT_FREQUENCY_DIVISOR);
+
+#if 0
 	Samples -= Requested / 2;
 	
 	// Discard as many samples as are generated in 1 frame, if fast-forwarding.
@@ -87,7 +91,7 @@ void feed_buffer(void *udata, Uint8 *buffer, int len)
 	}
 
 	// Take the second half of the sound now.
-	for (i = 0; i < Requested - Requested / 2; i++)
+	for (; i < Requested; i++)
 	{
 		s16 Left = 0, Right = 0;
 		RenderSample(&Left, &Right);
@@ -112,6 +116,7 @@ void feed_buffer(void *udata, Uint8 *buffer, int len)
 			}
 		}
 	}
+#endif
 }
 
 void init_sdlaudio()

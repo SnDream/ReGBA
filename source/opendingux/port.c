@@ -139,7 +139,8 @@ void ReGBA_LoadRTCTime(struct ReGBA_RTC* RTCData)
 bool ReGBA_IsRenderingNextFrame()
 {
 	uint32_t ResolvedUserFrameskip = ResolveSetting(UserFrameskip, PerGameUserFrameskip);
-	if (FastForwardFrameskip != 0) /* fast-forwarding */
+#if 0
+	if (FastForwardFrameskip != 0) /* fast-forwarding */ 
 	{
 		if (ResolvedUserFrameskip != 0)  /* fast-forwarding on user frameskip */
 			return FastForwardFrameskipControl == 0 && UserFrameskipControl == 0;
@@ -147,6 +148,7 @@ bool ReGBA_IsRenderingNextFrame()
 			return FastForwardFrameskipControl == 0 && AudioFrameskipControl == 0;
 	}
 	else
+#endif
 	{
 		if (ResolvedUserFrameskip != 0) /* user frameskip */
 			return UserFrameskipControl == 0;

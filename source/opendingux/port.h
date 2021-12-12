@@ -49,7 +49,7 @@ typedef struct timespec timespec;
 #ifndef RS90
 #define MAX_AUTO_FRAMESKIP 4
 #else
-#define MAX_AUTO_FRAMESKIP 5
+#define MAX_AUTO_FRAMESKIP 6
 #endif
 
 #define FILE_OPEN_APPEND ("a+")

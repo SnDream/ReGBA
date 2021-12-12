@@ -1587,17 +1587,21 @@ void ReGBA_RenderScreen(void)
 
 		while (true)
 		{
+#if 0
 			unsigned int AudioFastForwardedCopy = AudioFastForwarded;
 			unsigned int FramesAhead = (VideoFastForwarded >= AudioFastForwardedCopy)
 				? /* no overflow */ VideoFastForwarded - AudioFastForwardedCopy
 				: /* overflow */    0x100 - (AudioFastForwardedCopy - VideoFastForwarded);
 			uint32_t Quota = AUDIO_OUTPUT_BUFFER_SIZE * 3 * OUTPUT_FREQUENCY_DIVISOR + (uint32_t) (FramesAhead * (SOUND_FREQUENCY / 59.73f));
 			if (ReGBA_GetAudioSamplesAvailable() <= Quota)
+#endif
+			if (ReGBA_GetAudioSamplesAvailable() <= AUDIO_OUTPUT_BUFFER_SIZE * 3 * OUTPUT_FREQUENCY_DIVISOR)
 				break;
 			SDL_Delay(1);
 		}
 	}
 
+#if 0
 	if (ReGBA_GetAudioSamplesAvailable() < AUDIO_OUTPUT_BUFFER_SIZE * 2 * OUTPUT_FREQUENCY_DIVISOR)
 	{
 		if (AudioFrameskip < MAX_AUTO_FRAMESKIP)
@@ -1621,8 +1625,11 @@ void ReGBA_RenderScreen(void)
 		VideoFastForwarded = (VideoFastForwarded + 1) & 0xFF;
 	}
 	else
+#endif
 	{
+#if 0
 		FastForwardFrameskipControl = FastForwardFrameskip;
+#endif
 		uint32_t ResolvedUserFrameskip = ResolveSetting(UserFrameskip, PerGameUserFrameskip);
 		if (ResolvedUserFrameskip != 0)
 		{
@@ -1631,6 +1638,17 @@ void ReGBA_RenderScreen(void)
 			else
 				UserFrameskipControl--;
 		}
+#if 1
+		else if (ReGBA_GetAudioSamplesAvailable() < AUDIO_OUTPUT_BUFFER_SIZE * 2 * OUTPUT_FREQUENCY_DIVISOR)
+		{
+			if (AudioFrameskip < MAX_AUTO_FRAMESKIP)
+				AudioFrameskip++;
+		}
+		else if (AudioFrameskip > 0)
+		{
+			AudioFrameskip--;
+		}
+#endif
 	}
 
 	if (AudioFrameskipControl > 0)

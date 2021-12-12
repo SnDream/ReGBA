@@ -369,6 +369,6 @@ uint32_t ReGBA_LoadNextAudioSample(int16_t* Left, int16_t* Right);
  */
 uint32_t ReGBA_DiscardAudioSamples(uint32_t Count);
 
-// void ReuseReadedAudioSamples(uint32_t length);
+void ReuseReadedAudioSamples(uint16_t Count);
 
 #endif /* SOUND_H */
