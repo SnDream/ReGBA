@@ -252,7 +252,7 @@ void ProcessSpecialKeys()
 			ShowErrorScreen("Gathering the screenshot for saved state #1 failed: Memory allocation error");
 		else
 		{
-			uint32_t ret = save_state(0, Screenshot /* preserved screenshot */);
+			uint32_t ret = save_state(0, Screenshot /* preserved screenshot */, 0);
 			free(Screenshot);
 			if (ret != 1)
 			{

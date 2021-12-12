@@ -37,6 +37,8 @@ const uint8_t SVS_HEADER_E[SVS_HEADER_SIZE] = {'N', 'G', 'B', 'A', 'R', 'T', 'S'
   // with sound frequency-dependent variables precalculated with it at 88200.
 const uint8_t SVS_HEADER_F[SVS_HEADER_SIZE] = {'N', 'G', 'B', 'A', 'R', 'T', 'S',
   '1', '.', '0', 'f'};
+const uint8_t SVS_HEADER_X[SVS_HEADER_SIZE] = {'N', 'G', 'B', 'A', 'R', 'T', 'S',
+  '1', '.', '0', 'X'};
 
 typedef enum
 {
@@ -3913,6 +3915,7 @@ uint32_t load_state(uint32_t SlotNumber)
 		if (!(
 			memcmp(header, SVS_HEADER_E, SVS_HEADER_SIZE) == 0
 		||	memcmp(header, SVS_HEADER_F, SVS_HEADER_SIZE) == 0
+		||	memcmp(header, SVS_HEADER_X, SVS_HEADER_SIZE) == 0
 		)) {
 			FILE_CLOSE(savestate_file);
 			ReGBA_ProgressFinalise();
@@ -3942,6 +3945,16 @@ uint32_t load_state(uint32_t SlotNumber)
 			}
 			for (n = 0; n < 2; n++) {
 				timer[n].frequency_step = FLOAT_TO_FP16_16(FP16_16_TO_FLOAT(timer[n].frequency_step) * 65536.0f / SOUND_FREQUENCY);
+			}
+		}
+		else if (memcmp(header, SVS_HEADER_F, SVS_HEADER_SIZE) == 0)
+		{
+			unsigned int n;
+			for (n = 0; n < 4; n++) {
+				gbc_sound_channel[n].frequency_step = FLOAT_TO_FP16_16(FP16_16_TO_FLOAT(gbc_sound_channel[n].frequency_step) * 88200.0f / SOUND_FREQUENCY);
+			}
+			for (n = 0; n < 2; n++) {
+				timer[n].frequency_step = FLOAT_TO_FP16_16(FP16_16_TO_FLOAT(timer[n].frequency_step) * 88200.0f / SOUND_FREQUENCY);
 			}
 		}
 
@@ -3976,21 +3989,23 @@ uint32_t load_state(uint32_t SlotNumber)
 	}
 }
 
-
 /*--------------------------------------------------------
   保存即时存档
   input
     uint32_t SlotNumber           存档槽
     uint16_t *screen_capture      存档索引画面
+    int official                  官方格式存档
   return
     0 失败
     1 成功
 --------------------------------------------------------*/
-uint32_t save_state(uint32_t SlotNumber, const uint16_t *screen_capture)
+uint32_t save_state(uint32_t SlotNumber, const uint16_t *screen_capture, int official)
 {
   FILE_TAG_TYPE savestate_file;
   struct ReGBA_RTC Time;
   uint32_t ret = 1;
+
+  FIXED16_16 frequency_step_backup[4 + 4];
 
 	char SavedStateFilename[MAX_PATH + 1];
 	if (!ReGBA_GetSavedStateFilename(SavedStateFilename, CurrentGamePath, SlotNumber))
@@ -4006,17 +4021,47 @@ uint32_t save_state(uint32_t SlotNumber, const uint16_t *screen_capture)
   ReGBA_LoadRTCTime(&Time);
   FILE_WRITE_MEM_VARIABLE(g_state_buffer_ptr, Time);
 
+  uint16_t *convert_ptr = (uint16_t *)g_state_buffer_ptr;
   FILE_WRITE_MEM(g_state_buffer_ptr, screen_capture, 240 * 160 * 2);
+  /* RGB565 to BGR555 */
+  unsigned int n;
+  for (n = 0; n < 240 * 160 ; n++) {
+    uint16_t rgb565 = *(convert_ptr);
+    *(convert_ptr++) = (rgb565 & 0xF100) >> 11 | (rgb565 & 0x07C0) >> 1 | (rgb565 & 0x001F) << 10;
+  }
+
   //Identify ID
   *(g_state_buffer_ptr++)= 0x5A;
   *(g_state_buffer_ptr++)= 0x3C;
 
+  if (official) {
+    unsigned int n;
+    for (n = 0; n < 4; n++) {
+      frequency_step_backup[n] = gbc_sound_channel[n].frequency_step;
+      gbc_sound_channel[n].frequency_step = FLOAT_TO_FP16_16(FP16_16_TO_FLOAT(gbc_sound_channel[n].frequency_step) * SOUND_FREQUENCY / 88200.0f);
+    }
+    for (n = 0; n < 2; n++) {
+      frequency_step_backup[n + 4] = timer[n].frequency_step;
+      timer[n].frequency_step = FLOAT_TO_FP16_16(FP16_16_TO_FLOAT(timer[n].frequency_step) * SOUND_FREQUENCY / 88200.0f);
+    }
+  }
+
   savestate_block(write_mem);
+
+  if (official) {
+    unsigned int n;
+    for (n = 0; n < 4; n++) {
+      gbc_sound_channel[n].frequency_step = frequency_step_backup[n];
+    }
+    for (n = 0; n < 2; n++) {
+      timer[n].frequency_step = frequency_step_backup[n + 4];
+    }
+  }
 
   FILE_OPEN(savestate_file, SavedStateFilename, WRITE);
   if(FILE_CHECK_VALID(savestate_file))
   {
-    if (FILE_WRITE(savestate_file, SVS_HEADER_F, SVS_HEADER_SIZE) < SVS_HEADER_SIZE)
+    if (FILE_WRITE(savestate_file, official ? SVS_HEADER_F : SVS_HEADER_X, SVS_HEADER_SIZE) < SVS_HEADER_SIZE)
 	{
 		ret = 0;
 		goto fail;

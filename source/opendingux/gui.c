@@ -923,7 +923,35 @@ static void ActionSavedStateWrite(struct Menu** ActiveMenu, uint32_t* ActiveMenu
 	}
 	
 	// 2. If the file didn't exist or the user wanted to overwrite it, save.
-	uint32_t ret = save_state(SelectedState, MainMenu.UserData /* preserved screenshot */);
+	uint32_t ret = save_state(SelectedState, MainMenu.UserData /* preserved screenshot */, 0);
+	if (ret != 1)
+	{
+		if (errno != 0)
+			ShowErrorScreen("Writing saved state #%" PRIu32 " failed:\n%s", SelectedState + 1, strerror(errno));
+		else
+			ShowErrorScreen("Writing saved state #%" PRIu32 " failed:\nUnknown error", SelectedState + 1);
+	}
+	SavedStateUpdatePreview(*ActiveMenu);
+}
+
+static void ActionSavedStateWriteOfficial(struct Menu** ActiveMenu, uint32_t* ActiveMenuEntryIndex)
+{
+	// 1. If the file already exists, ask the user if s/he wants to overwrite it.
+	char SavedStateFilename[MAX_PATH + 1];
+	if (!ReGBA_GetSavedStateFilename(SavedStateFilename, CurrentGamePath, SelectedState))
+	{
+		ReGBA_Trace("W: Failed to get the name of saved state #%d for '%s'", SelectedState, CurrentGamePath);
+		ShowErrorScreen("Preparing to write saved state #%" PRIu32 " failed:\nPath too long", SelectedState + 1);
+		return;
+	}
+
+	char Temp[1024];
+	sprintf(Temp, "Do you want to export the official ReGBA-compatible saved state #%" PRIu32 "?\n[A] = Yes  Others = No", SelectedState + 1);
+	if (!GrabYesOrNo(*ActiveMenu, Temp))
+		return;
+	
+	// 2. If the file didn't exist or the user wanted to overwrite it, save.
+	uint32_t ret = save_state(SelectedState, MainMenu.UserData /* preserved screenshot */, 1);
 	if (ret != 1)
 	{
 		if (errno != 0)
@@ -1214,7 +1242,11 @@ static struct Menu PerGameDisplayMenu = {
 #if !NO_SCALING
 		&PerGameDisplayMenu_ScaleMode,
 #endif
-		&PerGameDisplayMenu_Frameskip, &PerGameDisplayMenu_FastForwardTarget, NULL }
+		&PerGameDisplayMenu_Frameskip,
+#if !defined(RS90)
+		&PerGameDisplayMenu_FastForwardTarget,
+#endif
+		NULL }
 };
 static struct Menu DisplayMenu = {
 	.Parent = &MainMenu, .Title = "Display settings",
@@ -1223,7 +1255,11 @@ static struct Menu DisplayMenu = {
 #if !NO_SCALING
 		&DisplayMenu_ScaleMode,
 #endif
-		&DisplayMenu_Frameskip, &DisplayMenu_FastForwardTarget, NULL }
+		&DisplayMenu_Frameskip,
+#if !defined(RS90)
+		&DisplayMenu_FastForwardTarget,
+#endif
+		NULL }
 };
 
 // -- Input Settings --
@@ -1423,6 +1459,11 @@ static struct MenuEntry SavedStateMenu_Write = {
 	.ButtonEnterFunction = ActionSavedStateWrite
 };
 
+static struct MenuEntry SavedStateMenu_Write_Official = {
+	.Kind = KIND_CUSTOM, .Name = "Export to the official ReGBA",
+	.ButtonEnterFunction = ActionSavedStateWriteOfficial
+};
+
 static struct MenuEntry SavedStateMenu_Delete = {
 	.Kind = KIND_CUSTOM, .Name = "Delete selected state",
 	.ButtonEnterFunction = ActionSavedStateDelete
@@ -1432,7 +1473,11 @@ static struct Menu SavedStateMenu = {
 	.Parent = &MainMenu, .Title = "Saved states",
 	.InitFunction = SavedStateMenuInit, .EndFunction = SavedStateMenuEnd,
 	.DisplayDataFunction = SavedStateMenuDisplayData,
-	.Entries = { &SavedStateMenu_SelectedState, &Strut, &SavedStateMenu_Read, &SavedStateMenu_Write, &SavedStateMenu_Delete, NULL }
+	.Entries = { &SavedStateMenu_SelectedState, &Strut, &SavedStateMenu_Read, &SavedStateMenu_Write, &SavedStateMenu_Delete,
+#if defined(RS90)
+	&Strut, &SavedStateMenu_Write_Official,
+#endif
+	NULL }
 };
 
 // -- Main Menu --
@@ -1487,8 +1532,10 @@ static struct Menu PerGameMainMenu = {
 	.AlternateVersion = &MainMenu,
 #if SCREEN_HEIGHT >= 240
 	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Input, &PerGameMainMenu_Hotkey, &Strut, &Strut, &Strut, &Strut, &Strut, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
-#else
+#elif !defined(RS90)
 	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Input, &PerGameMainMenu_Hotkey, &Strut, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
+#else
+	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Input, &Strut, &Strut, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
 #endif
 };
 struct Menu MainMenu = {
@@ -1496,8 +1543,10 @@ struct Menu MainMenu = {
 	.AlternateVersion = &PerGameMainMenu,
 #if SCREEN_HEIGHT >= 240
 	.Entries = { &MainMenu_Display, &MainMenu_Input, &MainMenu_Hotkey, &Strut, &MainMenu_SavedStates, &Strut, &Strut, &MainMenu_Debug, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
-#else
+#elif !defined(RS90)
 	.Entries = { &MainMenu_Display, &MainMenu_Input, &MainMenu_Hotkey, &MainMenu_SavedStates, &MainMenu_Debug, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
+#else
+	.Entries = { &MainMenu_Display, &MainMenu_Input, &Strut, &MainMenu_SavedStates, &MainMenu_Debug, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
 #endif
 };
 

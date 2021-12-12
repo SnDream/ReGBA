@@ -295,7 +295,7 @@ extern void update_backup_force();
 extern void bios_region_read_allow();
 extern void bios_region_read_protect();
 extern uint32_t load_state(uint32_t SlotNumber);
-extern uint32_t save_state(uint32_t SlotNumber, const uint16_t *screen_capture);
+extern uint32_t save_state(uint32_t SlotNumber, const uint16_t *screen_capture, int official);
 extern void init_rewind(void);
 extern void savestate_rewind(void);
 extern void loadstate_rewind(void);
