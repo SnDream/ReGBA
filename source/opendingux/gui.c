@@ -544,7 +544,7 @@ static void SavedStateSelectionDisplayValue(struct MenuEntry* DrawnMenuEntry, st
 	bool IsActive = (DrawnMenuEntry == ActiveMenuEntry);
 	uint16_t TextColor = IsActive ? COLOR_ACTIVE_TEXT : COLOR_INACTIVE_TEXT;
 	uint16_t OutlineColor = IsActive ? COLOR_ACTIVE_OUTLINE : COLOR_INACTIVE_OUTLINE;
-	PrintStringOutline(Value, TextColor, OutlineColor, OutputSurface->pixels, OutputSurface->pitch, 0, GetRenderedHeight(" ") * (Position + 2), SCREEN_WIDTH - GBA_SCREEN_WIDTH / 2 - 16, GetRenderedHeight(" ") + 2, RIGHT, TOP);
+	PrintStringOutline(Value, TextColor, OutlineColor, OutputSurface->pixels, OutputSurface->pitch, 0, GetRenderedHeight(" ") * (Position + 2), SCREEN_WIDTH - GBA_SCREEN_WIDTH / 2 - (NO_SCALING ? 4 : 16), GetRenderedHeight(" ") + 2, RIGHT, TOP);
 }
 
 static void SavedStateUpdatePreview(struct Menu* ActiveMenu)
