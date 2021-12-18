@@ -1639,14 +1639,15 @@ void ReGBA_RenderScreen(void)
 				UserFrameskipControl--;
 		}
 #if 1
-		else if (ReGBA_GetAudioSamplesAvailable() < AUDIO_OUTPUT_BUFFER_SIZE * 2 * OUTPUT_FREQUENCY_DIVISOR)
+		else if (ReGBA_GetAudioSamplesAvailable() <= AUDIO_OUTPUT_BUFFER_SIZE * 2 * OUTPUT_FREQUENCY_DIVISOR)
 		{
 			if (AudioFrameskip < MAX_AUTO_FRAMESKIP)
 				AudioFrameskip++;
 		}
 		else if (AudioFrameskip > 0)
 		{
-			AudioFrameskip--;
+			AudioFrameskip = 0;
+			AudioFrameskipControl = 0;
 		}
 #endif
 	}
