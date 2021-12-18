@@ -15,7 +15,7 @@ BOARD_CFLAGS := -O2
 BOARD_LDFLAGS := -Wl,-zcommon-page-size=2097152 -Wl,-zmax-page-size=2097152 -lhugetlbfs
 else ifeq ($(CONFIG),rs90)
 CROSS_COMPILE ?= /opt/rs90-toolchain/usr/bin/mipsel-rs90-linux-musl-
-BOARD_DEFS := -DRS90 -DUSE_MMAP -DSCREEN_WIDTH=240 -DSCREEN_HEIGHT=160
+BOARD_DEFS := -DRS90 -DUSE_MMAP -DSCREEN_WIDTH=240 -DSCREEN_HEIGHT=160 -DDROP_CODE_CACHE
 BOARD_CFLAGS := -Ofast -mips32 -mno-check-zero-division -fno-PIC -mno-fp-exceptions \
                 -mframe-header-opt -fsingle-precision-constant -fno-stack-protector \
                 -fomit-frame-pointer -falign-functions=1 -falign-jumps=1 -falign-loops=1

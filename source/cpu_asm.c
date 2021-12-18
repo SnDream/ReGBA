@@ -24,6 +24,7 @@
 
 #include "common.h"
 #include "cpu_common.h"
+#include <sys/mman.h>
   
 // When a mode change occurs from non-FIQ to non-FIQ retire the current
 // reg[13] and reg[14] into reg_mode[cpu_mode][5] and reg_mode[cpu_mode][6]
@@ -78,6 +79,7 @@ struct ReuseHeader {
 };
 
 /* These represent code caches. */
+#ifndef DROP_CODE_CACHE
 FULLY_UNINITIALIZED(uint8_t readonly_code_cache[READONLY_CODE_CACHE_SIZE])
   __attribute__((aligned(CODE_ALIGN_SIZE)));
 uint8_t* readonly_next_code = readonly_code_cache;
@@ -85,6 +87,17 @@ uint8_t* readonly_next_code = readonly_code_cache;
 FULLY_UNINITIALIZED(uint8_t writable_code_cache[WRITABLE_CODE_CACHE_SIZE])
   __attribute__((aligned(CODE_ALIGN_SIZE)));
 uint8_t* writable_next_code = writable_code_cache;
+#else
+FULLY_UNINITIALIZED(uint8_t readonly_code_cache[READONLY_CODE_CACHE_SIZE])
+  __attribute__((aligned(MEM_PAGE_SIZE))); /* Page Size */
+uint8_t* readonly_code_cache_mmap = NULL;
+uint8_t* readonly_next_code = readonly_code_cache;
+
+FULLY_UNINITIALIZED(uint8_t writable_code_cache[WRITABLE_CODE_CACHE_SIZE])
+  __attribute__((aligned(MEM_PAGE_SIZE))); /* Page Size */
+uint8_t* writable_code_cache_mmap = NULL;
+uint8_t* writable_next_code = writable_code_cache;
+#endif
 
 /* These represent Metadata Areas. */
 FULLY_UNINITIALIZED(uint32_t *rom_branch_hash[ROM_BRANCH_HASH_SIZE]);
@@ -3710,6 +3723,16 @@ void flush_translation_cache(TRANSLATION_REGION_TYPE translation_region,
 		case TRANSLATION_REGION_READONLY:
 			Stats.TranslationBytesFlushed[translation_region] +=
 				readonly_next_code - readonly_code_cache;
+#ifdef DROP_CODE_CACHE
+			munmap(readonly_code_cache_mmap, READONLY_CODE_CACHE_SIZE);
+			readonly_code_cache_mmap = mmap((void*)(&readonly_code_cache),
+				READONLY_CODE_CACHE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC,
+				MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+#if defined TRACE || defined TRACE_FLUSHING
+			ReGBA_Trace("Re-mmap readonly cache result: %s",
+				readonly_code_cache_mmap == (uint8_t *)(&readonly_code_cache) ? "Success" : "Fail" );
+#endif
+#endif
 			readonly_next_code = readonly_code_cache;
 			switch (flush_reason)
 			{
@@ -3735,6 +3758,16 @@ void flush_translation_cache(TRANSLATION_REGION_TYPE translation_region,
 		case TRANSLATION_REGION_WRITABLE:
 			Stats.TranslationBytesFlushed[translation_region] +=
 				writable_next_code - writable_code_cache;
+#ifdef DROP_CODE_CACHE
+			munmap(writable_code_cache_mmap, WRITABLE_CODE_CACHE_SIZE);
+			writable_code_cache_mmap = mmap((void*)(&writable_code_cache),
+				WRITABLE_CODE_CACHE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC,
+				MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+#if defined TRACE || defined TRACE_FLUSHING
+			ReGBA_Trace("Re-mmap writable cache result: %s",
+				writable_code_cache_mmap == (uint8_t *)(&writable_code_cache) ? "Success" : "Fail" );
+#endif
+#endif
 			writable_next_code = writable_code_cache;
 			memset(writable_checksum_hash, 0, sizeof(writable_checksum_hash));
 			switch (flush_reason)

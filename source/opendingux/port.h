@@ -52,6 +52,10 @@ typedef struct timespec timespec;
 #define MAX_AUTO_FRAMESKIP 6
 #endif
 
+#ifdef DROP_CODE_CACHE
+#define MEM_PAGE_SIZE (16 * 1024)
+#endif
+
 #define FILE_OPEN_APPEND ("a+")
 
 #define FILE_OPEN_READ ("rb")
