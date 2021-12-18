@@ -33,8 +33,8 @@ typedef struct timespec timespec;
 #define READONLY_CODE_CACHE_SIZE          (4 * 1024 * 1024)
 #define WRITABLE_CODE_CACHE_SIZE          (4 * 1024 * 1024)
 #else
-#define READONLY_CODE_CACHE_SIZE          (6 * 1024 * 1024)
-#define WRITABLE_CODE_CACHE_SIZE          (2 * 1024 * 1024)
+#define READONLY_CODE_CACHE_SIZE          (4 * 1024 * 1024)
+#define WRITABLE_CODE_CACHE_SIZE          (1 * 1024 * 1024)
 #endif
 /* The following parameter needs to be at least enough bytes to hold
  * the generated code for the largest instruction on your platform.
@@ -43,7 +43,7 @@ typedef struct timespec timespec;
 #ifndef RS90
 #define TRANSLATION_CACHE_LIMIT_THRESHOLD (1024)
 #else
-#define TRANSLATION_CACHE_LIMIT_THRESHOLD (1024 * 8)
+#define TRANSLATION_CACHE_LIMIT_THRESHOLD (1024)
 #endif
 
 #ifndef RS90
