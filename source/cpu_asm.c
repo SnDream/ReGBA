@@ -3723,14 +3723,15 @@ void flush_translation_cache(TRANSLATION_REGION_TYPE translation_region,
 		case TRANSLATION_REGION_READONLY:
 			Stats.TranslationBytesFlushed[translation_region] +=
 				readonly_next_code - readonly_code_cache;
+			Stats.TranslationBytesPeak[translation_region] = 0;
 #ifdef DROP_CODE_CACHE
-			munmap(readonly_code_cache_mmap, READONLY_CODE_CACHE_SIZE);
-			readonly_code_cache_mmap = mmap((void*)(&readonly_code_cache),
-				READONLY_CODE_CACHE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC,
-				MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+			munmap(readonly_code_cache_mmap, READONLY_CODE_CACHE_DROP_SIZE);
+			readonly_code_cache_mmap = mmap((void*)(&readonly_code_cache + READONLY_CODE_CACHE_DROP_OFFSET),
+				READONLY_CODE_CACHE_DROP_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC,
+				MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
 #if defined TRACE || defined TRACE_FLUSHING
 			ReGBA_Trace("Re-mmap readonly cache result: %s",
-				readonly_code_cache_mmap == (uint8_t *)(&readonly_code_cache) ? "Success" : "Fail" );
+				readonly_code_cache_mmap == (uint8_t *)(&readonly_code_cache + READONLY_CODE_CACHE_DROP_OFFSET) ? "Success" : "Fail" );
 #endif
 #endif
 			readonly_next_code = readonly_code_cache;
@@ -3758,14 +3759,17 @@ void flush_translation_cache(TRANSLATION_REGION_TYPE translation_region,
 		case TRANSLATION_REGION_WRITABLE:
 			Stats.TranslationBytesFlushed[translation_region] +=
 				writable_next_code - writable_code_cache;
+			Stats.TranslationBytesPeak[translation_region] = 0;
 #ifdef DROP_CODE_CACHE
-			munmap(writable_code_cache_mmap, WRITABLE_CODE_CACHE_SIZE);
-			writable_code_cache_mmap = mmap((void*)(&writable_code_cache),
-				WRITABLE_CODE_CACHE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC,
-				MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+			if ((writable_next_code - writable_code_cache) >= WRITABLE_CODE_CACHE_DROP_OFFSET) {
+				munmap(writable_code_cache_mmap, WRITABLE_CODE_CACHE_DROP_SIZE);
+				writable_code_cache_mmap = mmap((void*)(&writable_code_cache + WRITABLE_CODE_CACHE_DROP_OFFSET),
+					WRITABLE_CODE_CACHE_DROP_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC,
+					MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+			}
 #if defined TRACE || defined TRACE_FLUSHING
 			ReGBA_Trace("Re-mmap writable cache result: %s",
-				writable_code_cache_mmap == (uint8_t *)(&writable_code_cache) ? "Success" : "Fail" );
+				writable_code_cache_mmap == (uint8_t *)(&writable_code_cache + WRITABLE_CODE_CACHE_DROP_OFFSET) ? "Success" : "Fail" );
 #endif
 #endif
 			writable_next_code = writable_code_cache;
