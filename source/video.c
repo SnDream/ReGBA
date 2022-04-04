@@ -90,6 +90,7 @@ void render_scanline_conditional_bitmap(uint32_t start, uint32_t end, uint16_t *
  *layer_renderers);
 
 uint32_t obj_mixcolor;
+uint16_t blend_a, blend_b;
 
 #define no_op                                                                 \
 
@@ -110,8 +111,16 @@ uint32_t obj_mixcolor;
 #define tile_expand_base_normal(index)                                        \
     tile_lookup_palette(palette, current_pixel);                              \
     if (obj_mixcolor) {                                                       \
-      /* inaccurate */  \
-      dest_ptr[index] = ((current_pixel & 0xf7de) >> 1) + ((dest_ptr[index] & 0xf7de) >> 1); \
+      /* inaccurate */                                                        \
+      /* dest_ptr[index] = ((current_pixel & 0xf7de) >> 1) + ((dest_ptr[index] & 0xf7de) >> 1); */ \
+      /* more accurate ? */                                                   \
+      uint32_t obj_mixrb, obj_mixg;                                           \
+      obj_mixrb = (((current_pixel & 0xf81f) * blend_a) + ((dest_ptr[index] & 0xf81f) * blend_b)) >> 4; \
+      obj_mixg  = (((current_pixel & 0x07e0) * blend_a) + ((dest_ptr[index] & 0x07e0) * blend_b)) >> 4; \
+      obj_mixrb = (obj_mixrb & 0x10000) ? (obj_mixrb & 0x003f) | 0xf800 : obj_mixrb & 0xf83f; \
+      obj_mixrb = (obj_mixrb & 0x00020) ? (obj_mixrb & 0xf800) | 0x001f : obj_mixrb         ; \
+      obj_mixg  = (obj_mixg  & 0x00800) ?                        0x07e0 : obj_mixg  & 0x07e0; \
+      dest_ptr[index] = obj_mixg | obj_mixrb;                                 \
     } else {                                                                  \
       dest_ptr[index] = current_pixel;                                        \
     }                                                                         \
@@ -2296,16 +2305,16 @@ void expand_blend(uint32_t *screen_src_ptr, uint16_t *screen_dest_ptr,
 {
   uint32_t pixel_pair;
   uint32_t pixel_top, pixel_bottom;
-  uint32_t bldalpha = io_registers[REG_BLDALPHA];
-  uint32_t blend_a = bldalpha & 0x1F;
-  uint32_t blend_b = (bldalpha >> 8) & 0x1F;
+  // uint32_t bldalpha = io_registers[REG_BLDALPHA];
+  // uint32_t blend_a = bldalpha & 0x1F;
+  // uint32_t blend_b = (bldalpha >> 8) & 0x1F;
   uint32_t i;
 
-  if(blend_a > 16)
-    blend_a = 16;
+  // if(blend_a > 16)
+  //   blend_a = 16;
 
-  if(blend_b > 16)
-    blend_b = 16;
+  // if(blend_b > 16)
+  //   blend_b = 16;
 
   // The individual colors can saturate over 31, this should be taken
   // care of in an alternate pass as it incurs a huge additional speedhit.
@@ -2365,19 +2374,19 @@ void expand_darken_partial_alpha(uint32_t *screen_src_ptr, uint16_t *screen_dest
   int32_t blend = 16 - (io_registers[REG_BLDY] & 0x1F);
   uint32_t pixel_pair;
   uint32_t pixel_top, pixel_bottom;
-  uint32_t bldalpha = io_registers[REG_BLDALPHA];
-  uint32_t blend_a = bldalpha & 0x1F;
-  uint32_t blend_b = (bldalpha >> 8) & 0x1F;
+  // uint32_t bldalpha = io_registers[REG_BLDALPHA];
+  // uint32_t blend_a = bldalpha & 0x1F;
+  // uint32_t blend_b = (bldalpha >> 8) & 0x1F;
   uint32_t i;
 
-  if(blend < 0)
-    blend = 0;
+  // if(blend < 0)
+  //   blend = 0;
 
-  if(blend_a > 16)
-    blend_a = 16;
+  // if(blend_a > 16)
+  //   blend_a = 16;
 
-  if(blend_b > 16)
-    blend_b = 16;
+  // if(blend_b > 16)
+  //   blend_b = 16;
 
   expand_partial_alpha(darken);
 }
@@ -2389,9 +2398,9 @@ void expand_brighten_partial_alpha(uint32_t *screen_src_ptr, uint16_t *screen_de
   int32_t blend = io_registers[REG_BLDY] & 0x1F;
   uint32_t pixel_pair;
   uint32_t pixel_top, pixel_bottom;
-  uint32_t bldalpha = io_registers[REG_BLDALPHA];
-  uint32_t blend_a = bldalpha & 0x1F;
-  uint32_t blend_b = (bldalpha >> 8) & 0x1F;
+  // uint32_t bldalpha = io_registers[REG_BLDALPHA];
+  // uint32_t blend_a = bldalpha & 0x1F;
+  // uint32_t blend_b = (bldalpha >> 8) & 0x1F;
   uint32_t upper;
   uint32_t i;
 
@@ -2401,11 +2410,11 @@ void expand_brighten_partial_alpha(uint32_t *screen_src_ptr, uint16_t *screen_de
   upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;
   blend = 16 - blend;
 
-  if(blend_a > 16)
-    blend_a = 16;
+  // if(blend_a > 16)
+  //   blend_a = 16;
 
-  if(blend_b > 16)
-    blend_b = 16;
+  // if(blend_b > 16)
+  //   blend_b = 16;
 
   expand_partial_alpha(brighten);
 }
@@ -3111,6 +3120,10 @@ void update_scanline()
   uint32_t  video_mode = dispcnt & 0x07;                    // (0~5)
   uint32_t  pitch = GBAScreenPitch;
   uint16_t* screen_offset = GBAScreen + (vcount * pitch);
+
+  blend_a = io_registers[REG_BLDALPHA];
+  blend_b = (blend_a & 0x1000) ? 0x10 : (blend_a >> 8) & 0xf;
+  blend_a = (blend_a & 0x0010) ? 0x10 : (blend_a >> 0) & 0xf;
 
   // 如果 OAM 有变化，对其维护，排序
   if(oam_update)
