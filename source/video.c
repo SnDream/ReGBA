@@ -92,6 +92,26 @@ void render_scanline_conditional_bitmap(uint32_t start, uint32_t end, uint16_t *
 uint32_t obj_mixcolor;
 uint16_t blend_a, blend_b;
 
+#ifndef NATIVE_RGB565
+#define COLOR_MN01 0x03E07C1F
+#define COLOR_MN02 0x04008020
+#define COLOR_MN03 0x04000000
+#define COLOR_MN04 0x03E00000
+#define COLOR_MN05 0x00008000
+#define COLOR_MN06 0x00007C00
+#define COLOR_MN07 0x00000020
+#define COLOR_MN08 0x0000001F
+#else
+#define COLOR_MN01 0x07E0F81F
+#define COLOR_MN02 0x08010020
+#define COLOR_MN03 0x08000000
+#define COLOR_MN04 0x07E00000
+#define COLOR_MN05 0x00010000
+#define COLOR_MN06 0x0000F800
+#define COLOR_MN07 0x00000020
+#define COLOR_MN08 0x0000001F
+#endif
+
 #define no_op                                                                 \
 
 #define tile_lookup_palette_full(palette, source)                             \
@@ -108,6 +128,22 @@ uint16_t blend_a, blend_b;
     dest_ptr[index] = current_pixel;                                          \
   }                                                                           \
 
+#ifndef NATIVE_RGB565
+#define tile_expand_base_normal(index)                                        \
+    tile_lookup_palette(palette, current_pixel);                              \
+    if (obj_mixcolor) {                                                       \
+      uint32_t obj_mixgr, obj_mixb;                                           \
+      obj_mixgr = (((current_pixel & 0x7c1f) * blend_a) + ((dest_ptr[index] & 0x7c1f) * blend_b)) >> 4; \
+      obj_mixb  = (((current_pixel & 0x03e0) * blend_a) + ((dest_ptr[index] & 0x03e0) * blend_b)) >> 4; \
+      obj_mixgr = (obj_mixgr & 0x08000) ? (obj_mixgr & 0x003f) | 0x7800 : obj_mixgr & 0x783f; \
+      obj_mixgr = (obj_mixgr & 0x00020) ? (obj_mixgr & 0x7800) | 0x001f : obj_mixgr         ; \
+      obj_mixb  = (obj_mixb  & 0x00400) ?                        0x03e0 : obj_mixb  & 0x03e0; \
+      dest_ptr[index] = obj_mixb | obj_mixgr;                                 \
+    } else {                                                                  \
+      dest_ptr[index] = current_pixel;                                        \
+    }                                                                         \
+
+#else
 #define tile_expand_base_normal(index)                                        \
     tile_lookup_palette(palette, current_pixel);                              \
     if (obj_mixcolor) {                                                       \
@@ -124,6 +160,8 @@ uint16_t blend_a, blend_b;
     } else {                                                                  \
       dest_ptr[index] = current_pixel;                                        \
     }                                                                         \
+
+#endif
 
 #define tile_expand_transparent_normal(index)                                 \
   tile_expand_base_normal(index)                                              \
@@ -2183,7 +2221,7 @@ fill_line_builder(color32)
 
 #define blend_pixel()                                                         \
   pixel_bottom = palette_ram_converted[(pixel_pair >> 16) & 0x1FF];           \
-  pixel_bottom = (pixel_bottom | (pixel_bottom << 16)) & 0x07E0F81F;          \
+  pixel_bottom = (pixel_bottom | (pixel_bottom << 16)) & COLOR_MN01;          \
   pixel_top = ((pixel_top * blend_a) + (pixel_bottom * blend_b)) >> 4         \
 
 
@@ -2192,16 +2230,16 @@ fill_line_builder(color32)
 
 #define blend_saturate_pixel()                                                \
   blend_pixel();                                                              \
-  if(pixel_top & 0x08010020)                                                  \
+  if(pixel_top & COLOR_MN02)                                                  \
   {                                                                           \
-    if(pixel_top & 0x08000000)                                                \
-      pixel_top |= 0x07E00000;                                                \
+    if(pixel_top & COLOR_MN03)                                                \
+      pixel_top |= COLOR_MN04;                                                \
                                                                               \
-    if(pixel_top & 0x00010000)                                                \
-      pixel_top |= 0x0000F800;                                                \
+    if(pixel_top & COLOR_MN05)                                                \
+      pixel_top |= COLOR_MN06;                                                \
                                                                               \
-    if(pixel_top & 0x00000020)                                                \
-      pixel_top |= 0x0000001F;                                                \
+    if(pixel_top & COLOR_MN07)                                                \
+      pixel_top |= COLOR_MN08;                                                \
   }                                                                           \
 
 #define brighten_pixel()                                                      \
@@ -2219,9 +2257,9 @@ fill_line_builder(color32)
 
 
 #define expand_pixel_no_dest(expand_type, pixel_source)                       \
-  pixel_top = (pixel_top | (pixel_top << 16)) & 0x07E0F81F;                   \
+  pixel_top = (pixel_top | (pixel_top << 16)) & COLOR_MN01;                   \
   expand_type##_pixel();                                                      \
-  pixel_top &= 0x07E0F81F;                                                    \
+  pixel_top &= COLOR_MN01;                                                    \
   pixel_top = (pixel_top >> 16) | pixel_top                                   \
 
 #define expand_pixel(expand_type, pixel_source)                               \
@@ -2357,7 +2395,7 @@ void expand_brighten(uint16_t *screen_src_ptr, uint16_t *screen_dest_ptr,
   if(blend > 16)
     blend = 16;
 
-  upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;
+  upper = ((COLOR_MN01 * blend) >> 4) & COLOR_MN01;
   blend = 16 - blend;
 
   expand_loop(brighten, effect_condition_fade(pixel_top), pixel_top);
@@ -2407,7 +2445,7 @@ void expand_brighten_partial_alpha(uint32_t *screen_src_ptr, uint16_t *screen_de
   if(blend > 16)
     blend = 16;
 
-  upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;
+  upper = ((COLOR_MN01 * blend) >> 4) & COLOR_MN01;
   blend = 16 - blend;
 
   // if(blend_a > 16)
@@ -2596,7 +2634,7 @@ void expand_brighten_partial_alpha(uint32_t *screen_src_ptr, uint16_t *screen_de
           if(blend > 16)                                                      \
             blend = 16;                                                       \
                                                                               \
-          upper = ((0x07E0F81F * blend) >> 4) & 0x07E0F81F;                   \
+          upper = ((COLOR_MN01 * blend) >> 4) & COLOR_MN01;                   \
           blend = 16 - blend;                                                 \
                                                                               \
           expand_pixel_no_dest(brighten, pixel_top);                          \

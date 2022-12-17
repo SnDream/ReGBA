@@ -66,7 +66,7 @@ void zip_free_func(void* opaque, void* address)
 ssize_t load_file_zip(const char *filename, uint8_t** ROMBuffer)
 {
 	struct SZIPFileHeader data;
-	char tmp[MAX_PATH];
+	char tmp[MAX_PATH + 1];
 	ssize_t retval = -1;
 	uint8_t *cbuffer;
 	char *ext;

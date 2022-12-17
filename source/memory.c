@@ -165,7 +165,9 @@ bool IsNintendoBIOS = false;
 
 // Palette RAM             (05000000h)      1 KiB
 FULLY_UNINITIALIZED(uint16_t palette_ram   [  0x200]);
+#ifdef NATIVE_RGB565
 FULLY_UNINITIALIZED(uint16_t palette_ram_converted   [  0x200]);
+#endif
 // Object Attribute Memory (07000000h)      1 KiB
 FULLY_UNINITIALIZED(uint16_t oam_ram       [  0x200]);
 // I/O Registers           (04000000h)     32 KiB
@@ -1688,6 +1690,17 @@ CPU_ALERT_TYPE write_io_register32(uint32_t address, uint32_t value)
   return CPU_ALERT_NONE;
 }
 
+#ifndef NATIVE_RGB565
+#define write_palette8(address, value)                                        \
+  ADDRESS16(palette_ram, (address & ~0x01)) = ((value << 8) | value);         \
+
+#define write_palette16(address, value)                                       \
+  ADDRESS16(palette_ram, address) = value;                                    \
+
+#define write_palette32(address, value)                                       \
+  ADDRESS32(palette_ram, address) = value;                                    \
+
+#else
 #define write_palette8(address, value)                                        \
   ADDRESS16(palette_ram, (address & ~0x01)) = ((value << 8) | value);         \
   ADDRESS16(palette_ram_converted, (address & ~0x01)) = CONVERT_PALETTE16((value << 8) | value) \
@@ -1699,6 +1712,8 @@ CPU_ALERT_TYPE write_io_register32(uint32_t address, uint32_t value)
 #define write_palette32(address, value)                                       \
   ADDRESS32(palette_ram, address) = value;                                    \
   ADDRESS32(palette_ram_converted, address) = CONVERT_PALETTE32(value)        \
+
+#endif
 
 void write_backup(uint32_t address, uint32_t value)
 {
@@ -3771,7 +3786,9 @@ void init_memory()
   memset(io_registers, 0, sizeof(io_registers));
   memset(oam_ram, 0, sizeof(oam_ram));
   memset(palette_ram, 0, sizeof(palette_ram));
+#ifdef NATIVE_RGB565
   memset(palette_ram_converted, 0, sizeof(palette_ram_converted));
+#endif
   memset(iwram_data, 0, sizeof(iwram_data));
   memset(ewram_data, 0, sizeof(ewram_data));
   memset(vram, 0, sizeof(vram));
@@ -3873,11 +3890,13 @@ void loadstate_rewind(void)
 	{
 		gbc_sound_channel[i].sample_data = square_pattern_duty[2];
 	}
+#ifdef NATIVE_RGB565
 	// Generate converted palette (since it is not saved)
 	for(i = 0; i < sizeof(palette_ram_converted) / sizeof(palette_ram_converted[0]); i++)
 	{
 		palette_ram_converted[i] = CONVERT_PALETTE16(palette_ram[i]);
 	}
+#endif
 
 	reg[CHANGED_PC_STATUS] = 1;
 }
@@ -3972,11 +3991,13 @@ uint32_t load_state(uint32_t SlotNumber)
 		{
 			gbc_sound_channel[i].sample_data = square_pattern_duty[2];
 		}
+#ifdef NATIVE_RGB565
 		// Generate converted palette (since it is not saved)
 		for(i = 0; i < sizeof(palette_ram_converted) / sizeof(palette_ram_converted[0]); i++)
 		{
 			palette_ram_converted[i] = CONVERT_PALETTE16(palette_ram[i]);
 		}
+#endif
 
 		reg[CHANGED_PC_STATUS] = 1;
 
@@ -4020,7 +4041,9 @@ uint32_t save_state(uint32_t SlotNumber, const uint16_t *screen_capture, int off
 
   ReGBA_LoadRTCTime(&Time);
   FILE_WRITE_MEM_VARIABLE(g_state_buffer_ptr, Time);
-
+#ifndef NATIVE_RGB565
+  FILE_WRITE_MEM(g_state_buffer_ptr, screen_capture, 240 * 160 * 2);
+#else
   uint16_t *convert_ptr = (uint16_t *)g_state_buffer_ptr;
   FILE_WRITE_MEM(g_state_buffer_ptr, screen_capture, 240 * 160 * 2);
   /* RGB565 to BGR555 */
@@ -4029,6 +4052,7 @@ uint32_t save_state(uint32_t SlotNumber, const uint16_t *screen_capture, int off
     uint16_t rgb565 = *(convert_ptr);
     *(convert_ptr++) = (rgb565 & 0xF100) >> 11 | (rgb565 & 0x07C0) >> 1 | (rgb565 & 0x001F) << 10;
   }
+#endif
 
   //Identify ID
   *(g_state_buffer_ptr++)= 0x5A;

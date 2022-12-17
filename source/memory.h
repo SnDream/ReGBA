@@ -224,7 +224,11 @@ struct BIOS_SET
 };
 
 extern uint16_t palette_ram   [  0x200];
+#ifndef NATIVE_RGB565
+#define palette_ram_converted palette_ram
+#else
 extern uint16_t palette_ram_converted [  0x200];
+#endif
 extern uint16_t oam_ram       [  0x200];
 extern uint16_t io_registers  [ 0x4000];
 extern uint8_t  ewram_data    [0x40000];

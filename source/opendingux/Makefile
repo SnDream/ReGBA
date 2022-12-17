@@ -1,5 +1,5 @@
 ifeq ($(CONFIG),)
-CONFIGS:=gcw0,lepus,rs90,dingoo
+CONFIGS:=gcw0,lepus,rs90,rg99,dingoo
 $(error Please specify CONFIG, possible values: $(CONFIGS))
 endif
 
@@ -15,11 +15,18 @@ BOARD_CFLAGS := -O2
 BOARD_LDFLAGS := -Wl,-zcommon-page-size=2097152 -Wl,-zmax-page-size=2097152 -lhugetlbfs
 else ifeq ($(CONFIG),rs90)
 CROSS_COMPILE ?= /opt/rs90-toolchain/usr/bin/mipsel-rs90-linux-musl-
-BOARD_DEFS := -DRS90 -DUSE_MMAP -DSCREEN_WIDTH=240 -DSCREEN_HEIGHT=160 -DDROP_CODE_CACHE -DDROP_CODE_CACHE_PART
+BOARD_DEFS := -DRS90 -DRGMINUS -DNATIVE_RGB565 -DUSE_MMAP -DSCREEN_WIDTH=240 -DSCREEN_HEIGHT=160 -DDROP_CODE_CACHE -DDROP_CODE_CACHE_PART
 BOARD_CFLAGS := -O2 -DNDEBUG -mips32 -mno-check-zero-division -fno-PIC -mno-fp-exceptions \
                 -mframe-header-opt -ffast-math -fsingle-precision-constant -fno-stack-protector \
                 -fomit-frame-pointer -falign-functions=1 -falign-jumps=1 -falign-loops=1 -fno-caller-saves
-BOARD_LDFLAGS := -Wl,-zcommon-page-size=16384 -Wl,-zmax-page-size=16384
+BOARD_LDFLAGS := -Wl,-zcommon-page-size=16384 -Wl,-zmax-page-size=16384 -s
+else ifeq ($(CONFIG),rg99)
+CROSS_COMPILE ?= /opt/rs90-toolchain/usr/bin/mipsel-rs90-linux-musl-
+BOARD_DEFS := -DRG99 -DRGMINUS -DUSE_MMAP -DSCREEN_WIDTH=320 -DSCREEN_HEIGHT=240 -DDROP_CODE_CACHE -DDROP_CODE_CACHE_PART
+BOARD_CFLAGS := -O2 -DNDEBUG -mips32 -mno-check-zero-division -fno-PIC -mno-fp-exceptions \
+                -mframe-header-opt -ffast-math -fsingle-precision-constant -fno-stack-protector \
+                -fomit-frame-pointer -falign-functions=1 -falign-jumps=1 -falign-loops=1 -fno-caller-saves
+BOARD_LDFLAGS := -Wl,-zcommon-page-size=16384 -Wl,-zmax-page-size=16384 -s
 else ifeq ($(CONFIG),dingoo)
 CROSS_COMPILE ?= /opt/opendingux-toolchain/usr/bin/mipsel-linux-
 BOARD_DEFS := -DDINGOO_A320 -DUSE_MMAP -DSCREEN_WIDTH=320 -DSCREEN_HEIGHT=240

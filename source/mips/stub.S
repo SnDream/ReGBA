@@ -2470,6 +2470,10 @@ execute_store_palette_u8:
   andi $4, $4, 0x3FE              # align palette address
   addu $2, $2, $4
 
+#ifndef NATIVE_RGB565
+  jr $ra                          # return
+  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+#else
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
   andi $1, $5, 0x001F             #
   sll $1, $1, 11                  # Get Red value
@@ -2483,6 +2487,7 @@ execute_store_palette_u8:
   addu $2, $2, $4
   jr $ra                          # return
   sh $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
+#endif
 
 execute_store_vram_u8:
   translate_region_vram_store_align16 patch_store_u8
@@ -2582,6 +2587,10 @@ execute_store_palette_u16:
   andi $4, $4, 0x3FE              # wrap/align palette address
   addu $2, $2, $4
 
+#ifndef NATIVE_RGB565
+  jr $ra                          # return
+  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+#else
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
   andi $1, $5, 0x001F             #
   sll $1, $1, 11                  # Get Red value
@@ -2595,6 +2604,7 @@ execute_store_palette_u16:
   addu $2, $2, $4
   jr $ra                          # return
   sh $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
+#endif
 
 execute_store_vram_u16:
   translate_region_vram_store_align16 patch_store_u16
@@ -2695,6 +2705,10 @@ execute_store_palette_u32:
   andi $4, $4, 0x3FC              # wrap/align palette address
   addu $2, $2, $4
 
+#ifndef NATIVE_RGB565
+  jr $ra                          # return
+  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+#else
   sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
   sw $6, REG_SAVE2($16)           # save a2
   lui $6, 0x001F
@@ -2714,6 +2728,7 @@ execute_store_palette_u32:
   addu $2, $2, $4
   jr $ra                          # return
   sw $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
+#endif
 
 execute_store_vram_u32:
   translate_region_vram_store_align32 patch_store_u32
@@ -2823,6 +2838,10 @@ execute_store_palette_u32a:
   andi $4, $4, 0x3FC              # wrap/align palette address
   addu $2, $2, $4
 
+#ifndef NATIVE_RGB565
+  jr $ra                          # return
+  sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+#else
   sw $5, %lo(palette_ram)($2)     # palette_ram[address] = value
   sw $6, REG_SAVE2($16)           # save a2
   lui $6, 0x001F
@@ -2842,6 +2861,7 @@ execute_store_palette_u32a:
   addu $2, $2, $4
   jr $ra                          # return
   sw $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
+#endif
 
 execute_store_vram_u32a:
   translate_region_vram_store_align32 patch_store_u32a
@@ -3330,6 +3350,10 @@ ext_store_palette16b:
   lui $2, %hi(palette_ram)
   addu $2, $2, $4
 
+#ifndef NATIVE_RGB565
+  jr $ra                          # return
+  sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
+#else
   sh $5, %lo(palette_ram)($2)     # palette_ram[address] = value
   andi $1, $5, 0x001F             #
   sll $1, $1, 11                  # Get Red value
@@ -3343,6 +3367,7 @@ ext_store_palette16b:
   addu $2, $2, $4
   jr $ra                          # return
   sh $1, %lo(palette_ram_converted)($2) # palette_ram_converted[address] = value
+#endif
 
 ext_store_vram16:
 #ifdef MIPS_32R2

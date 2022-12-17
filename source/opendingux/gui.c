@@ -1243,7 +1243,7 @@ static struct Menu PerGameDisplayMenu = {
 		&PerGameDisplayMenu_ScaleMode,
 #endif
 		&PerGameDisplayMenu_Frameskip,
-#if !defined(RS90)
+#if !defined(RGMINUS)
 		&PerGameDisplayMenu_FastForwardTarget,
 #endif
 		NULL }
@@ -1256,7 +1256,7 @@ static struct Menu DisplayMenu = {
 		&DisplayMenu_ScaleMode,
 #endif
 		&DisplayMenu_Frameskip,
-#if !defined(RS90)
+#if !defined(RGMINUS)
 		&DisplayMenu_FastForwardTarget,
 #endif
 		NULL }
@@ -1474,7 +1474,7 @@ static struct Menu SavedStateMenu = {
 	.InitFunction = SavedStateMenuInit, .EndFunction = SavedStateMenuEnd,
 	.DisplayDataFunction = SavedStateMenuDisplayData,
 	.Entries = { &SavedStateMenu_SelectedState, &Strut, &SavedStateMenu_Read, &SavedStateMenu_Write, &SavedStateMenu_Delete,
-#if defined(RS90)
+#if defined(RGMINUS)
 	&Strut, &SavedStateMenu_Write_Official,
 #endif
 	NULL }
@@ -1530,9 +1530,9 @@ static struct Menu PerGameMainMenu = {
 	.Parent = NULL, .Title = "ReGBA Main Menu",
 	MENU_PER_GAME,
 	.AlternateVersion = &MainMenu,
-#if SCREEN_HEIGHT >= 240
+#if SCREEN_HEIGHT >= 240 && !defined(RGMINUS)
 	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Input, &PerGameMainMenu_Hotkey, &Strut, &Strut, &Strut, &Strut, &Strut, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
-#elif !defined(RS90)
+#elif !defined(RGMINUS)
 	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Input, &PerGameMainMenu_Hotkey, &Strut, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
 #else
 	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Input, &Strut, &Strut, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
@@ -1541,9 +1541,9 @@ static struct Menu PerGameMainMenu = {
 struct Menu MainMenu = {
 	.Parent = NULL, .Title = "ReGBA Main Menu",
 	.AlternateVersion = &PerGameMainMenu,
-#if SCREEN_HEIGHT >= 240
+#if SCREEN_HEIGHT >= 240 && !defined(RGMINUS)
 	.Entries = { &MainMenu_Display, &MainMenu_Input, &MainMenu_Hotkey, &Strut, &MainMenu_SavedStates, &Strut, &Strut, &MainMenu_Debug, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
-#elif !defined(RS90)
+#elif !defined(RGMINUS)
 	.Entries = { &MainMenu_Display, &MainMenu_Input, &MainMenu_Hotkey, &MainMenu_SavedStates, &MainMenu_Debug, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
 #else
 	.Entries = { &MainMenu_Display, &MainMenu_Input, &Strut, &MainMenu_SavedStates, &MainMenu_Debug, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }

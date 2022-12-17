@@ -29,7 +29,7 @@ typedef struct timespec timespec;
 
 /* Tuning parameters for the GCW Zero version of gpSP */
 /* Its processor is an Ingenic JZ4770 at 1000 MHz with 256..512 MiB of RAM */
-#ifndef RS90
+#ifdef RGMINUS
 #define READONLY_CODE_CACHE_SIZE          (4 * 1024 * 1024)
 #define WRITABLE_CODE_CACHE_SIZE          (4 * 1024 * 1024)
 #else
@@ -40,13 +40,13 @@ typedef struct timespec timespec;
  * the generated code for the largest instruction on your platform.
  * In most cases, that will be the ARM instruction
  * STMDB R0!, {R0,R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11,R12,R13,R14,R15} */
-#ifndef RS90
+#ifndef RGMINUS
 #define TRANSLATION_CACHE_LIMIT_THRESHOLD (1024)
 #else
 #define TRANSLATION_CACHE_LIMIT_THRESHOLD (1024)
 #endif
 
-#ifndef RS90
+#ifndef RGMINUS
 #define MAX_AUTO_FRAMESKIP 4
 #else
 #define MAX_AUTO_FRAMESKIP 6

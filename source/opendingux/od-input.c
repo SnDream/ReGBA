@@ -56,7 +56,11 @@ uint32_t OpenDinguxKeys[OPENDINGUX_BUTTON_COUNT] = {
 	0,
 	0,
 	0,
+#ifndef RG99
 	SDLK_HOME,       // GCW: Quick flick of Power
+#else
+	SDLK_PAGEUP,
+#endif
 };
 
 // These must be OpenDingux buttons at the bit suitable for the ReGBA_Buttons
@@ -185,7 +189,7 @@ static void UpdateOpenDinguxButtons()
 				break;
 		}
 	}
-#if !defined(RS90)
+#if !defined(RGMINUS)
 	CurButtons &= ~(OPENDINGUX_ANALOG_LEFT | OPENDINGUX_ANALOG_RIGHT
 	               | OPENDINGUX_ANALOG_UP | OPENDINGUX_ANALOG_DOWN);
 	int16_t X = GetHorizontalAxisValue(), Y = GetVerticalAxisValue(),
@@ -276,7 +280,7 @@ enum ReGBA_Buttons ReGBA_GetPressedButtons()
 
 	LastButtons = CurButtons;
 	CurButtons = FutureButtons;
-#if !defined(RS90)
+#if !defined(RGMINUS)
 	ProcessSpecialKeys();
 #endif
 	for (i = 0; i < 12; i++)
@@ -286,7 +290,7 @@ enum ReGBA_Buttons ReGBA_GetPressedButtons()
 			Result |= 1 << (uint_fast16_t) i;
 		}
 	}
-#if !defined(RS90)
+#if !defined(RGMINUS)
 	if (ResolveSetting(AnalogAction, PerGameAnalogAction) == 1)
 	{
 		if (LastButtons & OPENDINGUX_ANALOG_LEFT)  Result |= REGBA_BUTTON_LEFT;
@@ -305,6 +309,8 @@ enum ReGBA_Buttons ReGBA_GetPressedButtons()
 #if defined(GCW_ZERO) || defined(RS90)
 	// Unified emulator menu buttons: Start+Select
 		((CurButtons & 0x1FFFF) == (OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT))
+#elif defined(RG99)
+		0 /* Ignore hotkey config */
 #else
 	// The ReGBA Menu key should be pressed if ONLY the hotkey bound to it
 	// is pressed on the native device.
