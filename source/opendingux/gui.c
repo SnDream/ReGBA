@@ -1234,6 +1234,15 @@ static struct MenuEntry DisplayMenu_FastForwardTarget = {
 	.ChoiceCount = 5, .Choices = { { "2x (~120 FPS)", "2" }, { "3x (~180 FPS)", "3" }, { "4x (~240 FPS)", "4" }, { "5x (~300 FPS)", "5" }, { "6x (~360 FPS)", "6" } }
 };
 
+static struct MenuEntry PerGameDisplayMenu_VSync = {
+	ENTRY_OPTION("vsync", "V-Sync", &PerGameVSync),
+	.ChoiceCount = 3, .Choices = { { "No override", "" }, { "Off", "off" }, { "On", "on" } }
+};
+static struct MenuEntry DisplayMenu_VSync = {
+	ENTRY_OPTION("vsync", "V-Sync", &VSync),
+	.ChoiceCount = 2, .Choices = { { "Off", "off" }, { "On", "on" } }
+};
+
 static struct Menu PerGameDisplayMenu = {
 	.Parent = &PerGameMainMenu, .Title = "Display settings",
 	MENU_PER_GAME,
@@ -1245,6 +1254,9 @@ static struct Menu PerGameDisplayMenu = {
 		&PerGameDisplayMenu_Frameskip,
 #if !defined(RGMINUS)
 		&PerGameDisplayMenu_FastForwardTarget,
+#endif
+#if defined(RGMINUS)
+		&PerGameDisplayMenu_VSync,
 #endif
 		NULL }
 };
@@ -1258,6 +1270,9 @@ static struct Menu DisplayMenu = {
 		&DisplayMenu_Frameskip,
 #if !defined(RGMINUS)
 		&DisplayMenu_FastForwardTarget,
+#endif
+#if defined(RGMINUS)
+		&DisplayMenu_VSync,
 #endif
 		NULL }
 };

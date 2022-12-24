@@ -38,9 +38,25 @@ uint_fast8_t FramesBordered = 0;
 SDL_Surface *GBAScreenSurface = NULL;
 SDL_Surface *OutputSurface = NULL;
 SDL_Surface *BorderSurface = NULL;
+#ifdef RG99
+SDL_Surface *EXTScreenSurface = NULL;
+#endif
 
 video_scale_type PerGameScaleMode = 0;
-video_scale_type ScaleMode = scaled_aspect;
+video_scale_type ScaleMode = 
+#ifndef RG99
+	scaled_aspect;
+#else
+	hardware;
+#endif
+
+uint32_t PerGameVSync = 0;
+uint32_t VSync =
+#ifndef RG99
+	1;
+#else
+	0;
+#endif
 
 #define COLOR_PROGRESS_BACKGROUND   RGB888_TO_RGB565(  0,   0,   0)
 #define COLOR_PROGRESS_TEXT_CONTENT RGB888_TO_RGB565(255, 255, 255)
@@ -86,6 +102,14 @@ void init_video()
 	GBAScreenSurface = OutputSurface;
 #endif
 
+#ifdef RG99
+	EXTScreenSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, 16,
+	  GBA_RED_MASK,
+	  GBA_GREEN_MASK,
+	  GBA_BLUE_MASK,
+	  0 /* alpha: none */);
+#endif
+
 	GBAScreen = (uint16_t*) GBAScreenSurface->pixels;
 
 #if NO_SCALING
@@ -101,6 +125,10 @@ void SetMenuResolution()
 	OutputSurface = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, 16, SDL_HWSURFACE | SDL_DOUBLEBUF);
 	if (SDL_MUSTLOCK(OutputSurface))
 		SDL_LockSurface(OutputSurface);
+#endif
+
+#ifdef RGMINUS
+	OutputSurface = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, 16, SDL_SWSURFACE);
 #endif
 }
 
@@ -125,6 +153,21 @@ void SetGameResolution()
 		);
 	if (SDL_MUSTLOCK(OutputSurface))
 		SDL_LockSurface(OutputSurface);
+#endif
+
+#ifdef RS90
+	OutputSurface = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, 16, 
+			ResolveSetting(VSync, PerGameVSync) ? SDL_HWSURFACE | SDL_TRIPLEBUF : SDL_SWSURFACE );
+	GBAScreenSurface = OutputSurface;
+	GBAScreen = (uint16_t*) GBAScreenSurface->pixels;
+#endif
+
+#ifdef RG99
+	OutputSurface = SDL_SetVideoMode(SCREEN_WIDTH,
+			SCREEN_HEIGHT * (ResolveSetting(ScaleMode, PerGameScaleMode) == hardware ? 2 : 1), 16,
+			ResolveSetting(VSync, PerGameVSync) ? SDL_HWSURFACE | SDL_TRIPLEBUF : SDL_HWSURFACE );
+	memset(GBAScreenSurface->pixels, 0, GBA_SCREEN_HEIGHT * GBA_SCREEN_WIDTH * sizeof(uint16_t));
+	memset(EXTScreenSurface->pixels, 0, GBA_SCREEN_HEIGHT * GBA_SCREEN_WIDTH * sizeof(uint16_t));
 #endif
 }
 
@@ -417,6 +460,199 @@ static inline void gba_upscale(uint16_t *to, uint16_t *from,
 		to   = (uint16_t*) ((uint8_t*) to   + dst_skip + 2 * dst_pitch);
 	}
 }
+
+/* Upscales an image by 33% in width and 200% in height; also does color
+ * conversion using the function above.
+ * Input:
+ *   from_16: A pointer to the pixels member of a 240 by 160 surface to be
+ *     read by this function. The pixel format of this surface is XBGR 1555.
+ * Output:
+ *   to: A pointer to the pixels member of a (140 * 4/3) by (160 * 3)
+ *     surface to be filled with the upscaled GBA image. The pixel format of
+ *     this surface is RGB 565.
+ */
+#if defined(RG99)
+static inline void gba_upscale_rg99(uint16_t *to_16, uint16_t *from_16)
+{
+	/* Before:
+	 *    a b c d e f
+	 *
+	 * After (multiple letters = average):
+	 *    a    ab   bc   c    d    de   ef   f
+	 */
+
+	uint32_t *to = (uint32_t *)(to_16), *to_2, *to_3;
+	uint32_t *from = (uint32_t *)(from_16), *fcmp;
+	const uint32_t dst_pitch = SCREEN_WIDTH * sizeof(uint16_t);
+
+	uint32_t ResolvedVSync = ResolveSetting(VSync, PerGameVSync);
+	if (GBAScreen != GBAScreenSurface->pixels) {
+		fcmp = GBAScreenSurface->pixels;
+	} else {
+		fcmp = EXTScreenSurface->pixels;
+	}
+
+	uint32_t x, y;
+
+	for (y = 0; y < GBA_SCREEN_HEIGHT; y++) {
+		to_2 = (uint32_t*)((uint8_t*) to + dst_pitch * 1);
+		to_3 = (uint32_t*)((uint8_t*) to + dst_pitch * 2);
+		for (x = 0; x < GBA_SCREEN_WIDTH / 6; x++) {
+			if (!ResolvedVSync) {
+				if (*(from + 0) == *(fcmp + 0) 
+						&& *(from + 1) == *(fcmp + 1)
+						&& *(from + 2) == *(fcmp + 2)) {
+					from += 3, fcmp += 3;
+					to += 4, to_2 += 4, to_3 += 4;
+					continue;
+				}
+				fcmp += 3;
+			}
+			// Read RGB565 elements in the source grid.
+			// The notation is high_low (little-endian).
+			uint32_t b_a = bgr555_to_rgb565(*(from++)),
+			         d_c = bgr555_to_rgb565(*(from++)),
+			         f_e = bgr555_to_rgb565(*(from++));
+
+			// Generate ab_a from b_a.
+			*(to++) = *(to_2++) = *(to_3++) = likely(Hi(b_a) == Lo(b_a))
+				? b_a
+				: Lo(b_a) /* 'a' verbatim to low pixel */ |
+				  Raise(Average(Hi(b_a), Lo(b_a))) /* ba to high pixel */;
+
+			// Generate c_bc from b_a and d_c.
+			*(to++) = *(to_2++) = *(to_3++) = likely(Hi(b_a) == Lo(d_c))
+				? Lo(d_c) | Raise(Lo(d_c))
+				: Raise(Lo(d_c)) /* 'c' verbatim to high pixel */ |
+				  Average(Lo(d_c), Hi(b_a)) /* bc to low pixel */;
+
+			// Generate de_d from d_c and f_e.
+			*(to++) = *(to_2++) = *(to_3++) = likely(Hi(d_c) == Lo(f_e))
+				? Lo(f_e) | Raise(Lo(f_e))
+				: Hi(d_c) /* 'd' verbatim to low pixel */ |
+				  Raise(Average(Lo(f_e), Hi(d_c))) /* de to high pixel */;
+
+			// Generate f_ef from f_e.
+			*(to++) = *(to_2++) = *(to_3++) = likely(Hi(f_e) == Lo(f_e))
+				? f_e
+				: Raise(Hi(f_e)) /* 'f' verbatim to high pixel */ |
+				  Average(Hi(f_e), Lo(f_e)) /* ef to low pixel */;
+		}
+
+		to = to_3;
+	}
+}
+#elif 0 /* Slow */
+static inline void gba_upscale_rg99(uint16_t *to, uint16_t *from)
+{
+	/* Before:
+	 *    a b c d e f
+	 *
+	 * After (multiple letters = average):
+	 *    a    ab   bc   c    d    de   ef   f
+	 */
+
+	uint16_t *to_2, *to_3;
+	uint16_t *fcmp;
+	const uint32_t dst_pitch = SCREEN_WIDTH * sizeof(uint16_t);
+	const uint16_t rmask = 0b0000000000011111;
+	const uint16_t gmask = 0b0000001111100000;
+	const uint16_t bmask = 0b0111110000000000;
+	const uint16_t omask = 0b1111100000000000;
+
+	uint32_t ResolvedVSync = ResolveSetting(VSync, PerGameVSync);
+	if (GBAScreen != GBAScreenSurface->pixels) {
+		fcmp = GBAScreenSurface->pixels;
+	} else {
+		fcmp = EXTScreenSurface->pixels;
+	}
+
+	uint32_t x, y;
+
+	for (y = 0; y < GBA_SCREEN_HEIGHT; y++) {
+		to_2 = (uint16_t*)((uint8_t*) to + dst_pitch * 1);
+		to_3 = (uint16_t*)((uint8_t*) to + dst_pitch * 2);
+		for (x = 0; x < GBA_SCREEN_WIDTH / 3; x++) {
+			if (!ResolvedVSync) {
+				if ((*(uint32_t *)from) == (*(uint32_t *)fcmp) && *(from + 2) == *(fcmp + 2)) {
+					from += 3, fcmp += 3;
+					to += 4, to_2 += 4, to_3 += 4;
+					continue;
+				}
+				fcmp += 3;
+			}
+
+			uint16_t rgb, r0, g0, b0, r1, g1, b1;
+			rgb = *(from++);
+			r0 = rgb & rmask, g0 = rgb & gmask, b0 = rgb & bmask;
+			*(to++) = *(to_2++) = *(to_3++) = r0 << 11 | g0 << 1 | b0 >> 10;
+			rgb = *(from++);
+			r1 = rgb & rmask, g1 = rgb & gmask, b1 = rgb & bmask;
+			*(to++) = *(to_2++) = *(to_3++) = (((r0 + r1) << 10) & omask) | g1 << 1 | b1 >> 10;
+			rgb = *(from++);
+			r0 = rgb & rmask, g0 = rgb & gmask, b0 = rgb & bmask;
+			*(to++) = *(to_2++) = *(to_3++) = r1 << 11 | (g1 + g0) | ((b1 + b0) >> 11);
+			*(to++) = *(to_2++) = *(to_3++) = r0 << 11 | g0 << 1 | b0 >> 10;
+		}
+
+		to = to_3;
+	}
+}
+#elif 0 /* Slow */
+static inline void gba_upscale_rg99(uint16_t *to, uint16_t *from)
+{
+	/* Read RGB565 elements in the source grid.
+	 * The last column blends with the first column of the next
+	 * section.
+	 *
+	 * a | b c d
+	 */
+
+	uint16_t *to_2, *to_3;
+	uint16_t *fcmp;
+	const uint32_t dst_pitch = SCREEN_WIDTH * sizeof(uint16_t);
+
+	uint32_t ResolvedVSync = ResolveSetting(VSync, PerGameVSync);
+	if (GBAScreen != GBAScreenSurface->pixels) {
+		fcmp = GBAScreenSurface->pixels;
+	} else {
+		fcmp = EXTScreenSurface->pixels;
+	}
+
+	uint32_t x, y;
+
+	for (y = 0; y < GBA_SCREEN_HEIGHT; y++) {
+		to_2 = (uint16_t*)((uint8_t*) to + dst_pitch * 1);
+		to_3 = (uint16_t*)((uint8_t*) to + dst_pitch * 2);
+		uint32_t a = bgr555_to_rgb565_16(*from);
+		for (x = 0; x < GBA_SCREEN_WIDTH / 3; x++) {
+			if (!ResolvedVSync) {
+				if ((*(uint32_t *)from) == (*(uint32_t *)fcmp) && *(from + 2) == *(fcmp + 2)) {
+					from += 3, fcmp += 3;
+					to += 4, to_2 += 4, to_3 += 4;
+					continue;
+				}
+			}
+			uint32_t b = bgr555_to_rgb565_16(*(from++)),
+			         c = bgr555_to_rgb565_16(*(from++)),
+			         d = bgr555_to_rgb565_16(*(from++));
+			
+			*(to++) = *(to_2++) = *(to_3++) = likely(a == b)
+			? a : AverageQuarters3_1(b, a);
+
+			*(to++) = *(to_2++) = *(to_3++) = likely(b == c)
+			? b : Average(b, c);
+
+			*(to++) = *(to_2++) = *(to_3++) = likely(c == d)
+			? c : AverageQuarters3_1(c, d);
+
+			*(to++) = *(to_2++) = *(to_3++) = a = d;
+		}
+
+		to = to_3;
+	}
+}
+#endif
 
 /* Upscales an image by 33% in width and in height; also does color conversion
  * using the function above.
@@ -1511,7 +1747,15 @@ void ApplyScaleMode(video_scale_type NewMode)
 
 void ScaleModeUnapplied()
 {
+#if defined(RS90)
+	return;
+#elif defined(RG99)
+	if (ResolveSetting(VSync, PerGameVSync)) {
+		FramesBordered = 0;
+	}
+#else
 	FramesBordered = 0;
+#endif
 }
 
 void ReGBA_RenderScreen(void)
@@ -1529,7 +1773,11 @@ void ReGBA_RenderScreen(void)
 		}
 		switch (ResolvedScaleMode)
 		{
-#ifndef GCW_ZERO
+#if defined(RG99)
+			case hardware:
+				gba_upscale_rg99(OutputSurface->pixels, GBAScreen);
+				break;
+#elif !defined(GCW_ZERO)
 			case hardware: /* Hardware, when there's no hardware to scale
 			                  images, acts as unscaled */
 #endif
@@ -1969,14 +2217,25 @@ void ReGBA_ProgressFinalise()
 
 void ReGBA_VideoFlip()
 {
-#ifndef RS90
+#if !defined(RS90) && !defined(RG99)
 	if (SDL_MUSTLOCK(OutputSurface))
 		SDL_UnlockSurface(OutputSurface);
 	SDL_Flip(OutputSurface);
 	if (SDL_MUSTLOCK(OutputSurface))
 		SDL_LockSurface(OutputSurface);
-#else
+#endif
+
+#ifdef RS90
 	SDL_Flip(OutputSurface);
 	GBAScreen = (uint16_t*) GBAScreenSurface->pixels;
+#endif
+
+#ifdef RG99
+	SDL_Flip(OutputSurface);
+	if (GBAScreen != (uint16_t*) GBAScreenSurface->pixels) {
+		GBAScreen = (uint16_t*) GBAScreenSurface->pixels;
+	} else {
+		GBAScreen = (uint16_t*) EXTScreenSurface->pixels;
+	}
 #endif
 }
